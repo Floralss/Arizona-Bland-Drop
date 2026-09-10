@@ -140,6 +140,14 @@
       }
       detail = "Игровая валюта " + n.toLocaleString("ru-RU") + " → " + formatAZ(Math.floor(n / 1e9) * 10000);
     }
+    if (type === "az" || type === "game") {
+      const az = window.ABD.parseDeposit({ rawType: type, amount: amount });
+      if (!az) {
+        window.ABD.toast(type === "game" ? "Минимум 1 млрд игровой валюты" : "Укажи сумму AZ числом");
+        return;
+      }
+      detail = type === "game" ? detail : ("AZ " + formatAZ(az));
+    }
     const order = {
       kind: "deposit",
       email: u.email,
@@ -147,33 +155,22 @@
       publicId: u.publicId,
       detail: detail + (comment ? " · " + comment : ""),
       rawType: type,
-      amount: amount
+      amount: amount,
+      status: "new",
+      credited: false
     };
-    let credited = 0;
-    if (type === "az" || type === "game") {
-      const az = window.ABD.parseDeposit(order);
-      if (!az) {
-        window.ABD.toast(type === "game" ? "Минимум 1 млрд игровой валюты" : "Укажи сумму AZ числом");
-        return;
-      }
-      window.ABD.creditAz(u.email, az);
-      order.credited = true;
-      order.status = "done";
-      credited = az;
-    }
     if (btn) {
       btn.dataset.busy = "1";
-      btn.textContent = "Готово";
+      btn.textContent = "Заявка отправлена";
     }
     window.ABD.addOrder(order);
-    refreshHeader();
     if (document.getElementById("profilePage") && !document.getElementById("profilePage").classList.contains("hidden")) {
       renderProfile();
     }
     $("depAmount").value = "";
     $("depComment").value = "";
     $("depModal").classList.add("hidden");
-    window.ABD.toast(credited ? ("Баланс пополнен: +" + formatAZ(credited)) : "Заявка на предмет создана");
+    window.ABD.toast("Заявка отправлена. Баланс пополнится после подтверждения админа");
     setTimeout(() => {
       if (btn) {
         btn.dataset.busy = "0";
