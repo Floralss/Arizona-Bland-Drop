@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner() {
+      return signedIn() && request.auth.token.email == 'strepoomich27@gmail.com';
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isOwner());
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.balance == resource.data.balance;
+      allow update: if isOwner();
+    }
+
+    match /orders/{id} {
+      allow create: if signedIn();
+      allow read, update: if isOwner() ||
+        (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'worker');
+    }
+
+    match /liveDrops/{id} {
+      allow read: if true;
+      allow create: if signedIn();
+    }
+
+    match /presence/{id} {
+      allow read, write: if true;
+    }
+  }
+}

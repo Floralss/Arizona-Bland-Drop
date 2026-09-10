@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arizona Bland Drop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;650;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand" data-go="home">
+          <div class="logo-mark">AZ</div>
+          <h1>ARIZONA BLAND DROP</h1>
+        </div>
+        <nav class="top-nav">
+          <a href="#home" data-go="home" class="active">
+            <svg class="nav-ico" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 11h16M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            Кейсы
+          </a>
+          <a href="#upgrade" data-go="upgrade">
+            <svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 4l3 6H9l3-6zM7 14h10l-2 6H9l-2-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Апгрейд
+          </a>
+          <a href="#wheel" data-go="wheel">
+            <svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 3l2.2 4.6L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.6L12 3z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            Бонусы
+          </a>
+          <a href="#admin" data-go="admin" id="navAdmin" class="hidden">Админка</a>
+        </nav>
+        <div class="top-actions">
+          <div id="authButtons">
+            <button class="btn purple" data-go="profile">Войти</button>
+          </div>
+          <div id="userBox" class="hidden" style="display:flex;gap:8px;align-items:center">
+            <div class="balance-pill" id="hdrBal">0 AZ</div>
+            <button class="btn purple" data-open-dep>Пополнить</button>
+            <button class="btn ghost" data-go="profile" id="hdrNick">Профиль</button>
+          </div>
+        </div>
+      </header>
+    </div>
+
+    <div class="live-bar">
+      <div class="online-pill"><span class="wifi"></span><b id="onlineCount">1</b></div>
+      <div class="live-track" id="liveTrack"></div>
+    </div>
+
+    <section class="page" id="homePage">
+      <div class="hero">
+        <div class="hero-in">
+          <h2>Меньше мусора,<br>больше дропа</h2>
+          <p>Открывай кейсы Arizona Bland Drop: машины, скины, мото и аксы. Вывод на игровой ник.</p>
+          <button class="btn purple" onclick="document.getElementById('casesGrid').scrollIntoView({behavior:'smooth'})">Открыть кейс</button>
+        </div>
+      </div>
+      <div class="mode-row">
+        <button class="mode purple" data-go="home">
+          <img src="assets/cases/case-universal.png" alt="">
+          <span>КЕЙСЫ</span>
+        </button>
+        <button class="mode green" data-go="upgrade">
+          <img src="assets/cases/case-skins.png" alt="">
+          <span>АПГРЕЙД</span>
+        </button>
+        <button class="mode blue" data-go="wheel">
+          <img src="assets/cases/case-acc.png" alt="">
+          <span>КОЛЕСО</span>
+        </button>
+      </div>
+      <div class="col-title">◆ КЕЙСЫ ARIZONA ◆</div>
+      <div class="cases" id="casesGrid"></div>
+    </section>
+
+    <section class="page" id="casePage"></section>
+
+    <section class="page" id="wheelPage">
+      <div class="wheel-wrap">
+        <div class="wheel-scene">
+          <div class="wheel" id="bonusWheel"></div>
+          <div class="wheel-hub">
+            <h3>КОЛЕСО<br>БОНУС</h3>
+            <button class="btn" id="spinWheel">Крутить</button>
+            <label class="skip"><input type="checkbox" id="skipWheelAnim"> Пропустить анимацию</label>
+          </div>
+        </div>
+        <p class="wheel-note" id="wheelNote">Одно вращение в сутки на аккаунт.</p>
+      </div>
+    </section>
+
+    <section class="page" id="upgradePage">
+      <div id="upgradeStage"></div>
+    </section>
+
+    <section class="page" id="profilePage"><div id="profileBody"></div></section>
+    <section class="page" id="adminPage"></section>
+    <section class="page" id="fairPage">
+      <div class="panel">
+        <h3>Честность</h3>
+        <p style="color:var(--mute);margin:10px 0">Шансы каждого предмета указаны внутри кейса. В универсальном кейсе Helper Rights — 0.001%.</p>
+        <p style="color:var(--mute)">Пополнение и вывод идут заявкой в игру. 1 000 000 000 игровой валюты = 10 000 AZ.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>Arizona Bland Drop · <a href="https://t.me/arizonabland" target="_blank" rel="noopener">t.me/arizonabland</a></div>
+      <div>Вывод предметов на игровой аккаунт</div>
+    </footer>
+  </div>
+
+  <div class="modal-back hidden" id="depModal">
+    <div class="modal">
+      <div class="modal-head"><h3>Пополнение</h3><button class="close" data-close-dep>×</button></div>
+      <p style="color:var(--mute);margin-bottom:12px">Передай в игре выбранное. После подтверждения AZ придут на баланс.</p>
+      <div class="field">
+        <label>Что закидываешь</label>
+        <select id="depType">
+          <option value="az">AZ коины</option>
+          <option value="car">Машину</option>
+          <option value="acc">Аксессуар</option>
+          <option value="game">Игровую валюту</option>
+        </select>
+      </div>
+      <div class="field"><label>Сумма / название</label><input id="depAmount" placeholder="50000 или Mercedes AMG (0000)"></div>
+      <div class="field"><label>Сервер / комментарий</label><input id="depComment"></div>
+      <p id="depHint" style="color:var(--sand);font-size:12px;margin-bottom:12px">AZ начислят после подтверждения.</p>
+      <button class="btn" id="sendDep">Создать заявку</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/cases.js"></script>
+  <script src="js/upgrade.js"></script>
+  <script src="js/wheel.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+  <script type="module" src="js/firebase.js"></script>
+</body>
+</html>
