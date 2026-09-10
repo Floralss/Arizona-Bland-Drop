@@ -57,15 +57,16 @@
       box.innerHTML = `
         <div class="panel" style="max-width:420px">
           <h3>Вход</h3>
-          <p style="color:var(--mute);margin:8px 0 14px">Вход по почте. Ник в игре нужен для вывода.</p>
+          <p style="color:var(--mute);margin:8px 0 14px">Регистрация идёт в Firebase. Локальный аккаунт больше не создаётся.</p>
+          <p id="fbStatus" style="color:#f5d0fe;margin-bottom:12px;font-size:13px">Firebase: ${window.ABD_FB ? "подключён" : "не загрузился"}</p>
           <div class="field"><label>Почта</label><input id="loginEmail" placeholder="you@mail.com"></div>
           <div class="field"><label>Пароль</label><input id="loginPass" type="password" placeholder="минимум 6 символов"></div>
           <div class="field"><label>Ник в игре</label><input id="loginNick" placeholder="Name_Surname"></div>
           <div style="display:flex;gap:8px">
-            <button class="btn" id="btnLogin">Войти</button>
-            <button class="btn ghost" id="btnReg">Регистрация</button>
+            <button class="btn purple" id="btnLogin" type="button">Войти</button>
+            <button class="btn" id="btnReg" type="button">Регистрация</button>
           </div>
-          <p style="color:var(--mute);margin-top:10px;font-size:12px">После входа укажи игровой ник — на него уйдёт вывод.</p>
+          <p style="color:var(--mute);margin-top:10px;font-size:12px">Если напишет «не включена почта» — в Firebase включи Email/Password.</p>
         </div>`;
       return;
     }
@@ -77,6 +78,10 @@
           <p style="color:var(--mute)">${u.email}</p>
           <p style="margin:8px 0">ID аккаунта: <span class="badge">#${u.publicId || "—"}</span> · роль: <span class="badge">${u.role}</span>${(u.luckMul||1)>1 ? " · удача x"+u.luckMul : ""}</p>
           <p>Баланс: <b style="color:var(--gold)">${formatAZ(u.balance)}</b></p>
+          <p style="color:var(--mute);font-size:12px;margin:6px 0">Firebase UID: ${u.uid && String(u.uid).indexOf("demo-")===0 ? "НЕТ, это локальный аккаунт" : (u.uid || "—")}</p>
+          ${u.uid && String(u.uid).indexOf("demo-")===0 ? `
+          <div class="field"><label>Пароль чтобы записать этот акк в Firebase</label><input id="bindPass" type="password" placeholder="минимум 6 символов"></div>
+          <button class="btn purple" id="bindFb" type="button">Записать в базу</button>` : ""}
           <div class="field" style="margin-top:12px"><label>Ник в игре</label>
             <input id="nickEdit" value="${u.nick || ""}">
           </div>
@@ -203,6 +208,43 @@
     return (e && (e.message || e.code)) || "Ошибка Firebase";
   }
 
+  async function bindLocalToFirebase() {
+    const u = window.ABD.user;
+    const pass = ($("bindPass") && $("bindPass").value) || "";
+    if (!u || !u.email) return window.ABD.toast("Нет почты на аккаунте");
+    if (pass.length < 6) return window.ABD.toast("Пароль минимум 6 символов");
+    const fb = await waitFirebase(5000);
+    if (!fb) return window.ABD.toast("Firebase не загрузился");
+    try {
+      let cred;
+      try {
+        cred = await fb.createUserWithEmailAndPassword(fb.auth, u.email, pass);
+      } catch (e) {
+        if (e && e.code === "auth/email-already-in-use") {
+          cred = await fb.signInWithEmailAndPassword(fb.auth, u.email, pass);
+        } else {
+          throw e;
+        }
+      }
+      const profile = await fb.upsertUserDoc(cred.user, {
+        nick: u.nick,
+        balance: u.balance || 0,
+        inventory: u.inventory || [],
+        bestDrop: u.bestDrop || null,
+        role: window.ABD.roleOf(u.email, u.role),
+        publicId: u.publicId,
+        luckMul: u.luckMul || 1
+      });
+      window.ABD.user = Object.assign({}, u, profile, { uid: cred.user.uid, email: u.email });
+      window.ABD.saveLocal();
+      refreshHeader();
+      renderProfile();
+      window.ABD.toast("Аккаунт записан в Firebase");
+    } catch (e) {
+      window.ABD.toast(fbError(e));
+    }
+  }
+
   async function waitFirebase(ms) {
     const until = Date.now() + (ms || 5000);
     while (!window.ABD_FB && Date.now() < until) {
@@ -266,6 +308,7 @@
       if (e.target.id === "admLuckOff") window.ABD_ADMIN.luck($("admEmail").value, 1);
       if (e.target.id === "btnLogin") tryFirebaseAuth("login");
       if (e.target.id === "btnReg") tryFirebaseAuth("reg");
+      if (e.target.id === "bindFb") bindLocalToFirebase();
       if (e.target.id === "btnLogout") {
         if (window.ABD_FB) window.ABD_FB.signOut(window.ABD_FB.auth).catch(() => {});
         window.ABD.logout();
