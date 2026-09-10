@@ -308,9 +308,10 @@ img { max-width: 100%; display: block; }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .close { background: transparent; border: 0; color: var(--mute); font-size: 22px; cursor: pointer; }
 .toast {
-  position: fixed; right: 16px; bottom: 16px; z-index: 120;
-  background: #1a1d27; border: 1px solid var(--line); padding: 12px 14px;
-  border-radius: 12px;
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  z-index: 200; min-width: 260px; text-align: center;
+  background: #7c3aed; color: #fff; font-weight: 800;
+  border: 0; padding: 14px 18px; border-radius: 14px;
 }
 
 @media (max-width: 900px) {

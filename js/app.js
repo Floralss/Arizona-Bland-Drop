@@ -111,39 +111,70 @@
     $("depModal").classList.remove("hidden");
   }
 
-  async function sendDeposit() {
+  function sendDeposit() {
     const u = window.ABD.user;
-    if (!u) return window.ABD.toast("Войди");
+    if (!u) {
+      window.ABD.toast("Сначала войди");
+      return;
+    }
+    const btn = $("sendDep");
+    if (btn && btn.dataset.busy === "1") return;
     const type = $("depType").value;
-    const amount = $("depAmount").value.trim();
-    const comment = $("depComment").value.trim();
+    const amount = ($("depAmount").value || "").trim();
+    const comment = ($("depComment").value || "").trim();
+    if (!amount) {
+      window.ABD.toast("Напиши сумму или название предмета");
+      return;
+    }
     let detail = type + " · " + amount;
     if (type === "game") {
-      const n = Number(amount.replace(/\s/g, ""));
-      if (!n || n < 1e9) return window.ABD.toast("Минимум игровой валюты — 1 млрд = 10 000 AZ");
-      detail = `Игровая валюта ${n.toLocaleString("ru-RU")} → ${formatAZ(Math.floor(n / 1e9) * 10000)}`;
+      const n = Number(String(amount).replace(/\s/g, "").replace(/,/g, ""));
+      if (!n || n < 1e9) {
+        window.ABD.toast("Минимум игровой валюты — 1 млрд = 10 000 AZ");
+        return;
+      }
+      detail = "Игровая валюта " + n.toLocaleString("ru-RU") + " → " + formatAZ(Math.floor(n / 1e9) * 10000);
     }
     const order = {
       kind: "deposit",
       email: u.email,
       nick: u.nick,
+      publicId: u.publicId,
       detail: detail + (comment ? " · " + comment : ""),
       rawType: type,
-      amount
+      amount: amount
     };
     let credited = 0;
     if (type === "az" || type === "game") {
       const az = window.ABD.parseDeposit(order);
-      if (!az) return window.ABD.toast(type === "game" ? "Минимум 1 млрд игровой валюты" : "Укажи сумму AZ числом");
+      if (!az) {
+        window.ABD.toast(type === "game" ? "Минимум 1 млрд игровой валюты" : "Укажи сумму AZ числом");
+        return;
+      }
       window.ABD.creditAz(u.email, az);
       order.credited = true;
       order.status = "done";
       credited = az;
     }
-    await window.ABD.addOrder(order);
+    if (btn) {
+      btn.dataset.busy = "1";
+      btn.textContent = "Готово";
+    }
+    window.ABD.addOrder(order);
     refreshHeader();
-    window.ABD.toast(credited ? ("Зачислено " + formatAZ(credited)) : "Заявка на предмет создана");
+    if (document.getElementById("profilePage") && !document.getElementById("profilePage").classList.contains("hidden")) {
+      renderProfile();
+    }
+    $("depAmount").value = "";
+    $("depComment").value = "";
     $("depModal").classList.add("hidden");
+    window.ABD.toast(credited ? ("Баланс пополнен: +" + formatAZ(credited)) : "Заявка на предмет создана");
+    setTimeout(() => {
+      if (btn) {
+        btn.dataset.busy = "0";
+        btn.textContent = "Создать заявку";
+      }
+    }, 800);
   }
 
   async function withdraw(uid) {
@@ -161,29 +192,58 @@
     window.ABD.toast("Заявка на вывод создана. Скин/предмет выдадут на игровой аккаунт.");
   }
 
+  function fbError(e) {
+    const code = (e && e.code) || "";
+    if (code === "auth/operation-not-allowed") return "В Firebase не включена почта: Authentication → Sign-in method → Email/Password";
+    if (code === "auth/unauthorized-domain") return "Добавь домен сайта в Authentication → Settings → Authorized domains";
+    if (code === "auth/email-already-in-use") return "Эта почта уже зарегистрирована — жми Войти";
+    if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") return "Неверная почта или пароль";
+    if (code === "auth/weak-password") return "Пароль минимум 6 символов";
+    if (code === "auth/invalid-email") return "Некорректная почта";
+    return (e && (e.message || e.code)) || "Ошибка Firebase";
+  }
+
+  async function waitFirebase(ms) {
+    const until = Date.now() + (ms || 5000);
+    while (!window.ABD_FB && Date.now() < until) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return window.ABD_FB;
+  }
+
   async function tryFirebaseAuth(mode) {
     const email = ($("loginEmail").value || "").trim().toLowerCase();
     const pass = $("loginPass").value || "";
     const nick = ($("loginNick").value || "").trim();
     if (!email || !pass) return window.ABD.toast("Укажи почту и пароль");
-    const fb = window.ABD_FB;
-    if (fb) {
-      try {
-        if (mode === "reg") {
-          const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
-          if (nick) await fb.updateProfile(cred.user, { displayName: nick });
-        } else {
-          await fb.signInWithEmailAndPassword(fb.auth, email, pass);
-        }
-        return;
-      } catch (e) {
-        console.warn(e);
-        window.ABD.toast("Firebase: " + (e.code || e.message) + " — локальный вход");
-      }
+    const fb = await waitFirebase(5000);
+    if (!fb) {
+      window.ABD.toast("Firebase не загрузился. Открой сайт по https, не файлом");
+      return;
     }
-    window.ABD.loginLocal(email, nick);
-    refreshHeader();
-    renderProfile();
+    try {
+      let cred;
+      if (mode === "reg") {
+        cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
+        if (nick) await fb.updateProfile(cred.user, { displayName: nick });
+        const profile = await fb.upsertUserDoc(cred.user, { nick: nick, role: window.ABD.roleOf(email, "user"), balance: 0 });
+        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
+        window.ABD.ensurePublicId(window.ABD.user);
+        window.ABD.saveLocal();
+        window.ABD.toast("Аккаунт создан в базе, ID #" + (window.ABD.user.publicId || "?"));
+      } else {
+        cred = await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+        const profile = await fb.upsertUserDoc(cred.user, { nick: nick });
+        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
+        window.ABD.saveLocal();
+        window.ABD.toast("Вход через Firebase");
+      }
+      refreshHeader();
+      renderProfile();
+    } catch (e) {
+      console.warn(e);
+      window.ABD.toast(fbError(e));
+    }
   }
 
   function bind() {
@@ -220,7 +280,7 @@
       }
       if (e.target.closest("[data-open-dep]")) openDeposit();
       if (e.target.closest("[data-close-dep]")) $("depModal").classList.add("hidden");
-      if (e.target.id === "sendDep") sendDeposit();
+      if (e.target.id === "sendDep" || e.target.closest("#sendDep")) sendDeposit();
       const wd = e.target.closest("[data-wd]");
       if (wd) withdraw(wd.getAttribute("data-wd"));
       const ord = e.target.closest("[data-ord]");
@@ -263,27 +323,21 @@
     } catch (e) {}
     fb.onAuthStateChanged(fb.auth, async (user) => {
       if (!user) return;
-      let profile = {
-        uid: user.uid,
-        email: user.email,
-        nick: user.displayName || user.email.split("@")[0],
-        balance: 0,
-        role: window.ABD.roleOf(user.email, "user"),
-        inventory: [],
-        bestDrop: null
-      };
       try {
-        const snap = await fb.getDoc(fb.doc(fb.db, "users", user.uid));
-        if (snap.exists()) profile = Object.assign(profile, snap.data(), { uid: user.uid, email: user.email });
-        else await fb.setDoc(fb.doc(fb.db, "users", user.uid), profile, { merge: true });
+        const profile = await fb.upsertUserDoc(user, {
+          nick: user.displayName || (user.email || "").split("@")[0],
+          role: window.ABD.roleOf(user.email, "user")
+        });
+        profile.role = window.ABD.roleOf(profile.email, profile.role);
+        window.ABD.user = Object.assign({}, profile, { uid: user.uid, email: (user.email || "").toLowerCase() });
+        window.ABD.ensurePublicId(window.ABD.user);
+        window.ABD.saveLocal();
       } catch (e) {
         console.warn("firestore user", e.message);
+        window.ABD.toast("База не записала профиль: открой Firestore и поставь правила из firestore.rules");
       }
-      profile.role = window.ABD.roleOf(profile.email, profile.role);
-      window.ABD.user = profile;
-      window.ABD.saveLocal();
       refreshHeader();
-      if ($("profilePage").classList.contains("active")) renderProfile();
+      if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
     });
   }
 

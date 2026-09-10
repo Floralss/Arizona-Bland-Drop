@@ -7,20 +7,31 @@ service cloud.firestore {
     function isOwner() {
       return signedIn() && request.auth.token.email == 'strepoomich27@gmail.com';
     }
+    function isStaff() {
+      return isOwner() ||
+        (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'worker']);
+    }
 
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isOwner());
+      allow read: if signedIn();
       allow create: if signedIn() && request.auth.uid == uid;
       allow update: if signedIn() && request.auth.uid == uid
-                    && request.resource.data.role == resource.data.role
-                    && request.resource.data.balance == resource.data.balance;
-      allow update: if isOwner();
+                    && request.resource.data.role == resource.data.role;
+      allow write: if isOwner();
+    }
+
+    match /profiles/{email} {
+      allow read: if signedIn();
+      allow create, update: if signedIn();
+    }
+
+    match /counters/{id} {
+      allow read, write: if signedIn();
     }
 
     match /orders/{id} {
       allow create: if signedIn();
-      allow read, update: if isOwner() ||
-        (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'worker');
+      allow read, update: if isStaff();
     }
 
     match /liveDrops/{id} {

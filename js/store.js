@@ -141,6 +141,16 @@
           bestDrop: this.user.bestDrop,
           updatedAt: fb.serverTimestamp()
         }, { merge: true });
+        if (this.user.email) {
+          await fb.setDoc(fb.doc(fb.db, "profiles", String(this.user.email).toLowerCase()), {
+            uid: this.user.uid,
+            email: this.user.email,
+            nick: this.user.nick,
+            publicId: this.user.publicId,
+            balance: this.user.balance,
+            role: this.user.role
+          }, { merge: true });
+        }
       } catch (e) {
         console.warn("firebase persist skip", e.message);
       }
@@ -227,8 +237,10 @@
       amount = Math.floor(Number(amount) || 0);
       if (!email || amount <= 0) return 0;
       email = String(email).toLowerCase();
-      if (this.user && this.user.email === email) {
+      if (this.user && String(this.user.email || "").toLowerCase() === email) {
         this.user.balance = (Number(this.user.balance) || 0) + amount;
+        this.saveLocal();
+        this.upsertIndex(this.user);
         this.persistUser();
         return amount;
       }
