@@ -411,6 +411,13 @@
   }
 
   function bind() {
+    document.body.addEventListener("error", (e) => {
+      const el = e.target;
+      if (el && el.tagName === "IMG" && el.src.indexOf("predmeti") >= 0) {
+        el.onerror = null;
+        el.src = "assets/cases/case-auto.png";
+      }
+    }, true);
     document.body.addEventListener("submit", (e) => {
       if (e.target && (e.target.id === "loginForm" || e.target.id === "regForm")) {
         e.preventDefault();

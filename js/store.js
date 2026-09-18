@@ -41,14 +41,22 @@
     out.uid = (b.uid && String(b.uid).indexOf("demo-") !== 0 && b.uid !== "local") ? b.uid : (a.uid || b.uid);
     out.nick = b.nick || a.nick || "";
     out.publicId = a.publicId || b.publicId || null;
+    const toAt = function (x) {
+      if (!x) return 0;
+      if (typeof x === "number") return x;
+      if (x.toMillis) return x.toMillis();
+      if (x.seconds) return x.seconds * 1000;
+      const n = Number(x);
+      return isNaN(n) ? 0 : n;
+    };
     const balA = Number(a.balance || 0);
     const balB = Number(b.balance || 0);
-    const atA = Number(a.balAt || a.updatedAt || 0);
-    const atB = Number(b.balAt || b.updatedAt || 0);
-    if (balB > balA) out.balance = balB;
-    else if (atB >= atA) out.balance = balB;
-    else out.balance = balA;
-    out.balAt = Math.max(atA, atB, Date.now());
+    const atA = Math.max(toAt(a.balAt), toAt(a.updatedAt));
+    const atB = Math.max(toAt(b.balAt), toAt(b.updatedAt));
+    if (atB > atA) out.balance = balB;
+    else if (atA > atB) out.balance = balA;
+    else out.balance = (balA || balB);
+    out.balAt = Math.max(atA, atB);
     out.totalDeposited = Math.max(Number(a.totalDeposited || 0), Number(b.totalDeposited || 0));
     out.luckMul = a.luckMul || b.luckMul || 1;
     out.role = a.role === "owner" || b.role === "owner" ? "owner" : (a.role === "worker" || b.role === "worker" ? "worker" : (b.role || a.role || "user"));
@@ -483,35 +491,33 @@
       amount = Math.floor(Number(amount) || 0);
       if (!email || !amount) return 0;
       email = String(email).toLowerCase();
+      var next = 0;
       if (this.user && String(this.user.email || "").toLowerCase() === email) {
-        this.user.balance = Math.max(0, (Number(this.user.balance) || 0) + amount);
+        next = Math.max(0, (Number(this.user.balance) || 0) + amount);
+        this.user.balance = next;
+        this.user.balAt = Date.now();
         this.saveLocal();
         this.upsertIndex(this.user);
         this.persistUser();
-      } else {
-        const pack = this.loadPack(email) || emptyUser({ email: email });
-        pack.balance = Math.max(0, (Number(pack.balance) || 0) + amount);
-        this.savePack(email, pack);
-        const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email);
-        if (row) row.balance = pack.balance;
-        this.saveLocal();
+        return amount;
       }
+      const pack = this.loadPack(email) || emptyUser({ email: email });
+      next = Math.max(0, (Number(pack.balance) || 0) + amount);
+      pack.balance = next;
+      pack.balAt = Date.now();
+      this.savePack(email, pack);
+      const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email);
+      if (row) { row.balance = next; row.balAt = pack.balAt; }
+      this.saveLocal();
       const fb = window.ABD_FB;
       if (fb && fb.db) {
-        const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email);
-        const inc = fb.increment ? fb.increment(amount) : amount;
-        fb.db.collection("profiles").doc(email).set({
-          email: email,
-          balance: inc,
-          updatedAt: Date.now()
-        }, { merge: true }).catch(function () {});
-        if (row && row.uid && String(row.uid).indexOf("demo-") !== 0) {
-          fb.db.collection("users").doc(row.uid).set({
-            email: email,
-            balance: inc,
-            updatedAt: Date.now()
-          }, { merge: true }).catch(function () {});
+        const now = Date.now();
+        const uid = row && row.uid;
+        fb.db.collection("profiles").doc(email).set({ email: email, balance: next, balAt: now, updatedAt: now }, { merge: true }).catch(function () {});
+        if (uid && String(uid).indexOf("demo-") !== 0 && uid !== "local") {
+          fb.db.collection("users").doc(uid).set({ email: email, balance: next, balAt: now, updatedAt: now }, { merge: true }).catch(function () {});
         }
+        fb.db.collection("directory").doc(email).set({ email: email, balance: next, balAt: now, nick: (row && row.nick) || "", publicId: row && row.publicId, uid: uid || null }, { merge: true }).catch(function () {});
       }
       return amount;
     },

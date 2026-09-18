@@ -429,9 +429,9 @@ window.ABD_TYPE = {
 };
 
 window.itemImg = function (item) {
-  if (!item) return "";
-  const file = item.file || item;
-  return "assets/predmeti/" + file;
+  if (!item) return "assets/cases/case-auto.png";
+  const file = item.file || item.name || item;
+  try { return "assets/predmeti/" + encodeURI(file); } catch (e) { return "assets/cases/case-auto.png"; }
 };
 
 window.formatAZ = function (n) {

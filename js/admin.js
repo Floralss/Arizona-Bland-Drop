@@ -207,6 +207,12 @@
     },
 
     async giveMoney(q, amount) {
+      amount = Math.floor(Number(amount) || 0);
+      if (!amount) return window.ABD.toast("Укажи сумму");
+      const key = String(q) + ":" + amount;
+      if (this._payLock === key) return;
+      this._payLock = key;
+      setTimeout(() => { if (this._payLock === key) this._payLock = null; }, 1500);
       if (!can("owner")) return window.ABD.toast("Только владелец");
       let t = await window.ABD.findTargetAsync(q);
       const raw = String(q || "").trim().toLowerCase();
