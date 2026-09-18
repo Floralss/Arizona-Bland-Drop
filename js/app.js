@@ -217,11 +217,16 @@
       kind: "withdraw",
       email: u.email,
       nick: u.nick,
-      detail: item.name + " (" + item.full + ")",
+      publicId: u.publicId,
+      detail: item.name + (item.fromCase ? " · " + item.fromCase : ""),
       itemId: item.itemId,
-      invUid: uid
+      invUid: uid,
+      status: "new"
     });
-    window.ABD.toast("Заявка на вывод создана. Скин/предмет выдадут на игровой аккаунт.");
+    u.inventory = (u.inventory || []).filter((x) => x.uid !== uid);
+    window.ABD.persistUser();
+    renderProfile();
+    window.ABD.toast("Заявка на вывод создана. Предмет снимут после выдачи в игре.");
   }
 
   function fbError(e) {
@@ -545,7 +550,21 @@
           window.ABD.live = rows;
           renderLive();
         }
-      });
+      }, function () {});
+      try {
+        fb.db.collection("orders").onSnapshot((snap) => {
+          const rows = [];
+          snap.forEach((doc) => {
+            const d = doc.data() || {};
+            d.id = d.id || doc.id;
+            rows.push(d);
+          });
+          const map = {};
+          (window.ABD.orders || []).concat(rows).forEach((o) => { if (o && o.id) map[o.id] = o; });
+          window.ABD.orders = Object.keys(map).map((k) => map[k]).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          if ($("adminPage") && $("adminPage").classList.contains("active") && window.ABD_ADMIN) window.ABD_ADMIN.render();
+        }, function () {});
+      } catch (e) {}
     } catch (e) {}
     fb.onAuthStateChanged(fb.auth, async (user) => {
       if (!user) {

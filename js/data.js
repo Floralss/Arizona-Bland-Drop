@@ -9,7 +9,7 @@ window.ABD_ITEMS = {
     id: "car-amg",
     name: "Mercedes AMG",
     full: "Машина - Mercedes AMG (0000)",
-    file: "Машина - Mercedes AMG (0000).png",
+    file: "i-0000.png",
     type: "car",
     rarity: "rare",
     price: 18500
@@ -18,7 +18,7 @@ window.ABD_ITEMS = {
     id: "car-m5",
     name: "BMW M5 F90",
     full: "Машина - BMW M5 F90 (0001)",
-    file: "Машина - BMW M5 F90 (0001).png",
+    file: "i-0001.png",
     type: "car",
     rarity: "epic",
     price: 29000
@@ -27,7 +27,7 @@ window.ABD_ITEMS = {
     id: "car-camry",
     name: "Toyota Camry",
     full: "Машина - Toyota Camry (0002)",
-    file: "Машина - Toyota Camry (0002).png",
+    file: "i-0002.png",
     type: "car",
     rarity: "common",
     price: 3600
@@ -36,7 +36,7 @@ window.ABD_ITEMS = {
     id: "car-priora",
     name: "Lada Priora",
     full: "Машина - Lada Priora (0003)",
-    file: "Машина - Lada Priora (0003).png",
+    file: "i-0003.png",
     type: "car",
     rarity: "common",
     price: 1600
@@ -45,7 +45,7 @@ window.ABD_ITEMS = {
     id: "car-urus",
     name: "Lamborghini Urus",
     full: "Машина - Lamborghini Urus (0004)",
-    file: "Машина - Lamborghini Urus (0004).png",
+    file: "i-0004.png",
     type: "car",
     rarity: "legendary",
     price: 96000
@@ -54,7 +54,7 @@ window.ABD_ITEMS = {
     id: "car-rolls",
     name: "Rolls-Royce Cullinan",
     full: "Машина - Rolls-Royce Cullinan (0005)",
-    file: "Машина - Rolls-Royce Cullinan (0005).png",
+    file: "i-0005.png",
     type: "car",
     rarity: "legendary",
     price: 145000
@@ -63,7 +63,7 @@ window.ABD_ITEMS = {
     id: "car-tesla",
     name: "Tesla Model S",
     full: "Машина - Tesla Model S (0006)",
-    file: "Машина - Tesla Model S (0006).png",
+    file: "i-0006.png",
     type: "car",
     rarity: "epic",
     price: 34000
@@ -72,7 +72,7 @@ window.ABD_ITEMS = {
     id: "car-gtr",
     name: "Nissan GTR",
     full: "Машина - Nissan GTR (0007)",
-    file: "Машина - Nissan GTR (0007).png",
+    file: "i-0007.png",
     type: "car",
     rarity: "rare",
     price: 24000
@@ -81,7 +81,7 @@ window.ABD_ITEMS = {
     id: "moto-r1",
     name: "Yamaha R1",
     full: "Мото - Yamaha R1 (1000)",
-    file: "Мото - Yamaha R1 (1000).png",
+    file: "i-1000.png",
     type: "moto",
     rarity: "epic",
     price: 21000
@@ -90,7 +90,7 @@ window.ABD_ITEMS = {
     id: "moto-cbr",
     name: "Honda CBR 1000",
     full: "Мото - Honda CBR 1000 (1001)",
-    file: "Мото - Honda CBR 1000 (1001).png",
+    file: "i-1001.png",
     type: "moto",
     rarity: "rare",
     price: 12500
@@ -99,7 +99,7 @@ window.ABD_ITEMS = {
     id: "moto-ninja",
     name: "Kawasaki Ninja",
     full: "Мото - Kawasaki Ninja (1002)",
-    file: "Мото - Kawasaki Ninja (1002).png",
+    file: "i-1002.png",
     type: "moto",
     rarity: "rare",
     price: 14000
@@ -108,7 +108,7 @@ window.ABD_ITEMS = {
     id: "moto-harley",
     name: "Harley Davidson",
     full: "Мото - Harley Davidson (1003)",
-    file: "Мото - Harley Davidson (1003).png",
+    file: "i-1003.png",
     type: "moto",
     rarity: "epic",
     price: 26000
@@ -117,7 +117,7 @@ window.ABD_ITEMS = {
     id: "moto-gsx",
     name: "Suzuki GSX-R",
     full: "Мото - Suzuki GSX-R (1004)",
-    file: "Мото - Suzuki GSX-R (1004).png",
+    file: "i-1004.png",
     type: "moto",
     rarity: "common",
     price: 3200
@@ -126,7 +126,7 @@ window.ABD_ITEMS = {
     id: "skin-biz",
     name: "Business Black",
     full: "Скин - Business Black (2000)",
-    file: "Скин - Business Black (2000).png",
+    file: "i-2000.png",
     type: "skin",
     rarity: "rare",
     price: 3600
@@ -135,7 +135,7 @@ window.ABD_ITEMS = {
     id: "skin-hoodie",
     name: "Street Hoodie",
     full: "Скин - Street Hoodie (2001)",
-    file: "Скин - Street Hoodie (2001).png",
+    file: "i-2001.png",
     type: "skin",
     rarity: "common",
     price: 700
@@ -144,7 +144,7 @@ window.ABD_ITEMS = {
     id: "skin-police",
     name: "Police Officer",
     full: "Скин - Police Officer (2002)",
-    file: "Скин - Police Officer (2002).png",
+    file: "i-2002.png",
     type: "skin",
     rarity: "epic",
     price: 8200
@@ -153,7 +153,7 @@ window.ABD_ITEMS = {
     id: "skin-cowboy",
     name: "Desert Cowboy",
     full: "Скин - Desert Cowboy (2003)",
-    file: "Скин - Desert Cowboy (2003).png",
+    file: "i-2003.png",
     type: "skin",
     rarity: "rare",
     price: 4200
@@ -162,7 +162,7 @@ window.ABD_ITEMS = {
     id: "skin-neon",
     name: "Neon Night",
     full: "Скин - Neon Night (2004)",
-    file: "Скин - Neon Night (2004).png",
+    file: "i-2004.png",
     type: "skin",
     rarity: "legendary",
     price: 18500
@@ -171,7 +171,7 @@ window.ABD_ITEMS = {
     id: "skin-winter",
     name: "Winter Parka",
     full: "Скин - Winter Parka (2005)",
-    file: "Скин - Winter Parka (2005).png",
+    file: "i-2005.png",
     type: "skin",
     rarity: "common",
     price: 850
@@ -180,7 +180,7 @@ window.ABD_ITEMS = {
     id: "acc-rolex",
     name: "Rolex Daytona",
     full: "Акс - Rolex Daytona (3000)",
-    file: "Акс - Rolex Daytona (3000).png",
+    file: "i-3000.png",
     type: "acc",
     rarity: "legendary",
     price: 28000
@@ -189,7 +189,7 @@ window.ABD_ITEMS = {
     id: "acc-chain",
     name: "Chrome Chain",
     full: "Акс - Chrome Chain (3001)",
-    file: "Акс - Chrome Chain (3001).png",
+    file: "i-3001.png",
     type: "acc",
     rarity: "rare",
     price: 4800
@@ -198,7 +198,7 @@ window.ABD_ITEMS = {
     id: "acc-glasses",
     name: "Black Glasses",
     full: "Акс - Black Glasses (3002)",
-    file: "Акс - Black Glasses (3002).png",
+    file: "i-3002.png",
     type: "acc",
     rarity: "common",
     price: 650
@@ -207,7 +207,7 @@ window.ABD_ITEMS = {
     id: "acc-ring",
     name: "Gold Ring",
     full: "Акс - Gold Ring (3003)",
-    file: "Акс - Gold Ring (3003).png",
+    file: "i-3003.png",
     type: "acc",
     rarity: "epic",
     price: 9000
@@ -216,7 +216,7 @@ window.ABD_ITEMS = {
     id: "acc-cap",
     name: "Bland Cap",
     full: "Акс - Bland Cap (3004)",
-    file: "Акс - Bland Cap (3004).png",
+    file: "i-3004.png",
     type: "acc",
     rarity: "common",
     price: 450
@@ -225,7 +225,7 @@ window.ABD_ITEMS = {
     id: "car-g63",
     name: "G63 AMG",
     full: "Машина - G63 AMG (0008)",
-    file: "Машина - G63 AMG (0008).png",
+    file: "i-0008.png",
     type: "car",
     rarity: "legendary",
     price: 88000
@@ -234,7 +234,7 @@ window.ABD_ITEMS = {
     id: "car-supra",
     name: "Toyota Supra",
     full: "Машина - Toyota Supra (0009)",
-    file: "Машина - Toyota Supra (0009).png",
+    file: "i-0009.png",
     type: "car",
     rarity: "epic",
     price: 42000
@@ -243,7 +243,7 @@ window.ABD_ITEMS = {
     id: "car-e63",
     name: "Mercedes E63s",
     full: "Машина - Mercedes E63s (0010)",
-    file: "Машина - Mercedes E63s (0010).png",
+    file: "i-0010.png",
     type: "car",
     rarity: "epic",
     price: 38000
@@ -252,7 +252,7 @@ window.ABD_ITEMS = {
     id: "car-2107",
     name: "ВАЗ 2107",
     full: "Машина - ВАЗ 2107 (0011)",
-    file: "Машина - ВАЗ 2107 (0011).png",
+    file: "i-0011.png",
     type: "car",
     rarity: "common",
     price: 1200
@@ -261,7 +261,7 @@ window.ABD_ITEMS = {
     id: "donat-vip",
     name: "VIP статус",
     full: "Донат - VIP (4000)",
-    file: "Донат - VIP (4000).png",
+    file: "i-4000.png",
     type: "donate",
     rarity: "epic",
     price: 25000
@@ -270,7 +270,7 @@ window.ABD_ITEMS = {
     id: "donat-bp",
     name: "Боевой пропуск",
     full: "Донат - Боевой пропуск (4001)",
-    file: "Донат - Боевой пропуск (4001).png",
+    file: "i-4001.png",
     type: "donate",
     rarity: "rare",
     price: 8000
@@ -279,7 +279,7 @@ window.ABD_ITEMS = {
     id: "donat-prem",
     name: "Premium донат",
     full: "Донат - Premium (4002)",
-    file: "Донат - Premium (4002).png",
+    file: "i-4002.png",
     type: "donate",
     rarity: "legendary",
     price: 60000
@@ -288,7 +288,7 @@ window.ABD_ITEMS = {
     id: "admin-helper",
     name: "Helper Rights",
     full: "Админ - Helper Rights (9999)",
-    file: "Админ - Helper Rights (9999).png",
+    file: "i-9999.png",
     type: "admin",
     rarity: "mythic",
     price: 500000

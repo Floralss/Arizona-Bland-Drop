@@ -348,12 +348,37 @@
       order.id = order.id || ("ord-" + Date.now());
       order.createdAt = Date.now();
       if (!order.status) order.status = "new";
+      this.orders = (this.orders || []).filter((x) => x.id !== order.id);
       this.orders.unshift(order);
       this.saveLocal();
       const fb = window.ABD_FB;
-      if (fb) {
-        try { await fb.addDoc(fb.collection(fb.db, "orders"), order); } catch (e) {}
+      if (fb && fb.db) {
+        try {
+          await fb.db.collection("orders").doc(order.id).set(order, { merge: true });
+        } catch (e) {
+          console.warn("order write", e && e.message);
+        }
       }
+    },
+
+    async pullOrders() {
+      const fb = window.ABD_FB;
+      if (!fb || !fb.db) return;
+      try {
+        const snap = await fb.db.collection("orders").limit(200).get();
+        const rows = [];
+        snap.forEach((doc) => {
+          const d = doc.data() || {};
+          d.id = d.id || doc.id;
+          rows.push(d);
+        });
+        if (rows.length) {
+          const map = {};
+          (this.orders || []).concat(rows).forEach((o) => { if (o && o.id) map[o.id] = o; });
+          this.orders = Object.keys(map).map((k) => map[k]).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          this.saveLocal();
+        }
+      } catch (e) {}
     },
 
     addLive(drop) {

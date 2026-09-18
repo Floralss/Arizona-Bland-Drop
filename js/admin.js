@@ -15,7 +15,10 @@
     render() {
       if (!this._pulled && window.ABD.pullPlayers) {
         this._pulled = true;
-        window.ABD.pullPlayers().then(() => this.render()).catch(() => {});
+        Promise.all([
+          window.ABD.pullPlayers(),
+          window.ABD.pullOrders ? window.ABD.pullOrders() : Promise.resolve()
+        ]).then(() => this.render()).catch(() => {});
       }
       const root = document.getElementById("adminPage");
       const u = window.ABD.user;
@@ -150,7 +153,12 @@
       if (!o) return;
       if (status === "reject") {
         window.ABD.notify(o.email, "Заявка отклонена", "Ваша заявка была отклонена");
+        if (o.kind === "withdraw" && o.itemId) {
+          window.ABD.giveItemToEmail(o.email, o.itemId, "Возврат вывода");
+        }
         window.ABD.removeOrder(id);
+        const fb = window.ABD_FB;
+        if (fb && fb.db) fb.db.collection("orders").doc(id).delete().catch(function () {});
         window.ABD.toast("Заявка удалена, игроку ушло сообщение");
         this.render();
         if (window.ABD_APP.refreshBell) window.ABD_APP.refreshBell();
@@ -187,8 +195,13 @@
           window.ABD.toast("Предмет принят. BC не начисляются — это депозит вещи.");
         }
       }
+      if (status === "done" && o.kind === "withdraw") {
+        window.ABD.notify(o.email, "Вывод", "Заявка на вывод принята. Предмет выдадут на игровой ник.");
+      }
       o.status = status;
       window.ABD.saveLocal();
+      const fb = window.ABD_FB;
+      if (fb && fb.db) fb.db.collection("orders").doc(id).set(o, { merge: true }).catch(function () {});
       this.render();
       window.ABD_APP.refreshHeader();
     },
