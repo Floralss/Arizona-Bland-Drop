@@ -14,19 +14,23 @@
   window.ABD_PROMO = {
     list() { return load(); },
 
-    create(code, type, value, maxUses) {
+    create(code, kind, type, value, maxUses, extra) {
+      extra = extra || {};
       code = String(code || "").trim().toUpperCase().replace(/\s+/g, "");
       if (!code) return "Напиши код";
       const list = load();
       if (list.some((p) => p.code === code)) return "Такой код уже есть";
       const row = {
         code: code,
+        kind: kind || "free",
         type: type === "item" ? "item" : "bc",
         itemId: type === "item" ? value : null,
-        amount: type === "item" ? 0 : Math.max(1, Number(value) || 0),
+        amount: type === "item" ? 0 : Math.max(0, Number(value) || 0),
         max: Math.max(1, Number(maxUses) || 1),
         used: 0,
-        active: true
+        active: true,
+        bonusPct: Number(extra.bonusPct || 0),
+        giftCase: extra.giftCase || ""
       };
       list.unshift(row);
       save(list);
@@ -59,7 +63,16 @@
       }
       if (!promo || promo.active === false) return "Код не найден";
       if (Number(promo.used || 0) >= Number(promo.max || 1)) return "Код уже закончился";
-      if (promo.type === "item" && promo.itemId) {
+      const kind = promo.kind || "free";
+      if (kind === "dep1000" && Number(u.totalDeposited || 0) < 1000) {
+        return "Нужно пополнить сайт минимум на 1000 BC";
+      }
+      if (kind === "depbonus") {
+        u.depBonusPct = Number(promo.bonusPct || 0);
+        u.depGiftCase = promo.giftCase || "";
+        window.ABD.persistUser();
+        window.ABD.notify(u.email, "Промокод", "Бонус к пополнению активирован");
+      } else if (promo.type === "item" && promo.itemId) {
         window.ABD.giveItem(promo.itemId, "Промо " + code);
       } else {
         window.ABD.creditAz(u.email, promo.amount || 0);

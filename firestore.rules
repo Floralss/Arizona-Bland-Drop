@@ -64,5 +64,8 @@ service cloud.firestore {
     match /raffles/{id} {
       allow read, write: if signedIn();
     }
+    match /directory/{id} {
+      allow read, write: if signedIn();
+    }
   }
 }

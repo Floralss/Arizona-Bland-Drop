@@ -51,7 +51,10 @@
             ${u.role === "owner" ? `
               <h3>Выдача по ID</h3>
               <p class="muted">Первый аккаунт = ID 1, следующий 2 и так дальше.</p>
-              <div class="field"><label>ID игрока или почта</label><input id="admEmail" placeholder="1"></div>
+              <div class="field"><label>ID / почта / ник</label><input id="admEmail" placeholder="4 или почта"></div>
+              <div class="ava-row" id="admPeople">${(window.ABD.usersIndex || []).map((x) =>
+                `<button class="btn ghost" type="button" data-pick-user="${x.email}">#${x.publicId || "?"} ${x.nick || x.email}</button>`
+              ).join("") || "<span class='muted'>список подтянется из базы</span>"}</div>
               <div class="field"><label>Роль</label>
                 <select id="admRole"><option value="user">Игрок</option><option value="worker">Работник</option><option value="owner">Владелец</option></select>
               </div>
@@ -87,16 +90,25 @@
               <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
               <h3>Промокоды</h3>
               <div class="field"><label>Код</label><input id="prCode" placeholder="START100"></div>
-              <div class="field"><label>Тип</label>
-                <select id="prType"><option value="bc">BC</option><option value="item">Предмет</option></select>
+              <div class="field"><label>Вид промо</label>
+                <select id="prKind">
+                  <option value="free">1. Бесплатный — без условий</option>
+                  <option value="dep1000">2. После пополнения от 1000 BC</option>
+                  <option value="depbonus">3. Бонус к пополнению</option>
+                </select>
               </div>
-              <div class="field"><label>Сумма BC или предмет</label>
+              <div class="field"><label>Награда (для вида 1 и 2)</label>
+                <select id="prType"><option value="bc">BC</option><option value="item">Предмет</option></select>
                 <input id="prVal" placeholder="1000">
                 <select id="prItem">${Object.values(window.ABD_ITEMS).map((it) => `<option value="${it.id}">${it.name}</option>`).join("")}</select>
               </div>
+              <div class="field"><label>Вид 3: процент к пополнению</label><input id="prPct" type="number" value="25"></div>
+              <div class="field"><label>Вид 3: кейс в подарок</label>
+                <select id="prGift"><option value="">без кейса</option>${window.ABD_CASES.map((c) => `<option value="${c.id}">${c.name}</option>`).join("")}</select>
+              </div>
               <div class="field"><label>Сколько активаций</label><input id="prMax" type="number" value="50"></div>
               <button class="btn" id="prMake">Создать промокод</button>
-              <div class="muted" style="margin:8px 0">${(window.ABD_PROMO ? window.ABD_PROMO.list() : []).map((p) => p.code + " · " + p.used + "/" + p.max).join("<br>") || "пока нет"}</div>
+              <div class="muted" style="margin:8px 0">${(window.ABD_PROMO ? window.ABD_PROMO.list() : []).map((p) => p.code + " · " + (p.kind || "free") + " · " + p.used + "/" + p.max).join("<br>") || "пока нет"}</div>
               <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
               <h3>Розыгрыш</h3>
               <div class="field"><label>Название</label><input id="rfTitle" placeholder="Розыгрыш G63"></div>
@@ -152,8 +164,25 @@
             return;
           }
           window.ABD.creditAz(o.email, az);
+          const pack = window.ABD.loadPack(o.email) || {};
+          pack.totalDeposited = Number(pack.totalDeposited || 0) + az;
+          let extra = 0;
+          if (Number(pack.depBonusPct || 0) > 0) {
+            extra = Math.floor(az * Number(pack.depBonusPct) / 100);
+            if (extra) window.ABD.creditAz(o.email, extra);
+            pack.depBonusPct = 0;
+          }
+          if (pack.depGiftCase) {
+            const cc = window.ABD_CASES.find((x) => x.id === pack.depGiftCase);
+            if (cc) {
+              const hit = window.pickWeighted(cc.items);
+              window.ABD.giveItemToEmail(o.email, hit.id, "Подарок к пополнению");
+            }
+            pack.depGiftCase = "";
+          }
+          window.ABD.savePack(o.email, pack);
           o.credited = true;
-          window.ABD.toast("Зачислено " + formatAZ(az) + " на #" + ((window.ABD.findTarget(o.email) || {}).publicId || "?"));
+          window.ABD.toast("Зачислено " + formatAZ(az + extra) + (extra ? " с бонусом" : ""));
         } else {
           window.ABD.toast("Предмет принят. BC не начисляются — это депозит вещи.");
         }
@@ -179,8 +208,10 @@
 
     async giveMoney(q, amount) {
       if (!can("owner")) return window.ABD.toast("Только владелец");
-      const t = await window.ABD.findTargetAsync(q);
-      if (!t || !t.email) return window.ABD.toast("Игрок не найден в базе. Проверь почту или ID");
+      let t = await window.ABD.findTargetAsync(q);
+      const raw = String(q || "").trim().toLowerCase();
+      if ((!t || !t.email) && raw.indexOf("@") >= 0) t = { email: raw, nick: raw, publicId: "?" };
+      if (!t || !t.email) return window.ABD.toast("Игрок не найден. Напиши почту целиком, не только ID");
       window.ABD.creditAz(t.email, amount);
       window.ABD.notify(t.email, "Начисление", "Админ выдал " + formatAZ(amount));
       this.render();

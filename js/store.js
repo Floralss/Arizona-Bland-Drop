@@ -79,15 +79,45 @@
       }
     },
 
+    idMap() {
+      try { return JSON.parse(localStorage.getItem("abd_id_map") || "{}"); } catch (e) { return {}; }
+    },
+
+    saveIdMap(map) {
+      localStorage.setItem("abd_id_map", JSON.stringify(map || {}));
+    },
+
     ensurePublicId(u) {
-      if (!u) return;
-      if (u.publicId) return u.publicId;
-      const known = this.usersIndex.find((x) => x.email === u.email && x.publicId);
+      if (!u || !u.email) return;
+      if (u.publicId) {
+        const map = this.idMap();
+        map[String(u.email).toLowerCase()] = Number(u.publicId);
+        this.saveIdMap(map);
+        return u.publicId;
+      }
+      const email = String(u.email).toLowerCase();
+      const map = this.idMap();
+      if (map[email]) {
+        u.publicId = Number(map[email]);
+        return u.publicId;
+      }
+      const pack = this.loadPack(email);
+      if (pack && pack.publicId) {
+        u.publicId = Number(pack.publicId);
+        map[email] = u.publicId;
+        this.saveIdMap(map);
+        return u.publicId;
+      }
+      const known = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email && x.publicId);
       if (known) {
-        u.publicId = known.publicId;
+        u.publicId = Number(known.publicId);
+        map[email] = u.publicId;
+        this.saveIdMap(map);
         return u.publicId;
       }
       u.publicId = takeNextId();
+      map[email] = u.publicId;
+      this.saveIdMap(map);
       return u.publicId;
     },
 
@@ -128,6 +158,20 @@
       q = String(q || "").trim().toLowerCase().replace(/^#/, "");
       if (!q) return null;
       try {
+        const dirAll = await fb.db.collection("directory").limit(400).get();
+        const rows = [];
+        dirAll.forEach((doc) => rows.push(doc.data() || {}));
+        rows.forEach((d) => { if (d.email) this.upsertIndex(d); });
+        if (/^\d+$/.test(q)) {
+          const hit = rows.find((d) => Number(d.publicId) === Number(q));
+          if (hit) return hit;
+        } else {
+          const hit = rows.find((d) =>
+            (d.email || "").toLowerCase() === q ||
+            (d.nick || "").toLowerCase() === q
+          );
+          if (hit) return hit;
+        }
         if (q.indexOf("@") >= 0) {
           const p = await fb.db.collection("profiles").doc(q).get();
           if (p.exists) {
@@ -173,6 +217,13 @@
       const fb = window.ABD_FB;
       if (!fb || !fb.db) return;
       try {
+        const snap = await fb.db.collection("directory").limit(400).get();
+        snap.forEach((doc) => {
+          const d = doc.data() || {};
+          if (d.email) this.upsertIndex(d);
+        });
+      } catch (e) {}
+      try {
         const snap = await fb.db.collection("profiles").limit(200).get();
         snap.forEach((doc) => {
           const d = doc.data() || {};
@@ -213,6 +264,15 @@
           inventory: this.user.inventory,
           bestDrop: this.user.bestDrop,
           updatedAt: fb.serverTimestamp()
+        }, { merge: true });
+        await fb.db.collection("directory").doc(String(this.user.email).toLowerCase()).set({
+          uid: this.user.uid,
+          email: this.user.email,
+          nick: this.user.nick,
+          publicId: this.user.publicId,
+          balance: this.user.balance,
+          role: this.user.role,
+          totalDeposited: this.user.totalDeposited || 0
         }, { merge: true });
         if (this.user.email) {
           await fb.setDoc(fb.doc(fb.db, "profiles", String(this.user.email).toLowerCase()), {

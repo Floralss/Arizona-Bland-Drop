@@ -5,6 +5,8 @@
     current: null,
     spinning: false,
     timer: null,
+    qty: 1,
+    fast: false,
 
     renderGrid() {
       const root = document.getElementById("casesGrid");
@@ -70,9 +72,13 @@
           <div class="art pulse-art"><img src="${c.image}" alt="${c.name}"></div>
           <div id="caseResult" class="hidden"></div>
           ${user && miss > 0 ? `<div class="warn-bal"><b>${need.toLocaleString("ru-RU")} BC — не хватает ${miss.toLocaleString("ru-RU")} BC</b></div>` : ""}
-          ${canOpen
-            ? `<button class="btn green btn-lg" id="spinCase">Открыть за ${need.toLocaleString("ru-RU")} BC</button>`
-            : user
+          ${canOpen ? `
+            <div class="qty-row">
+              ${[1,3,5].map((n) => `<button class="btn ${this.qty===n?"purple":"ghost"}" data-spin-qty="${n}">x${n}</button>`).join("")}
+              <label class="skip"><input type="checkbox" id="spinFast" ${this.fast?"checked":""}> Быстрая крутка</label>
+            </div>
+            <button class="btn green btn-lg" id="spinCase">Открыть x${this.qty} за ${(need*this.qty).toLocaleString("ru-RU")} BC</button>
+          ` : user
               ? `<button class="btn green btn-lg" data-open-dep>Пополнить баланс</button>`
               : `<button class="btn green btn-lg" data-go="profile">Войти, чтобы открыть</button>`}
         </div>
@@ -98,20 +104,26 @@
       const user = window.ABD.user;
       const roul = document.getElementById("roulette");
       if (!c || !user || this.spinning || !roul) return;
-      if (user.balance < c.price) {
-        window.ABD.toast("Недостаточно BC");
+      const qty = Math.max(1, Number(this.qty) || 1);
+      const cost = c.price * qty;
+      if (user.balance < cost) {
+        window.ABD.toast("Недостаточно BC на x" + qty);
         return;
       }
 
       this.spinning = true;
       const btn = document.getElementById("spinCase");
       if (btn) btn.disabled = true;
-      user.balance -= c.price;
+      user.balance -= cost;
       window.ABD.persistUser();
       window.ABD_APP.refreshHeader();
 
-      const winEntry = pickWithLuck(c.items, user.luckMul || 1, c.price);
-      const winItem = window.ABD_ITEMS[winEntry.id];
+      const wins = [];
+      for (let n = 0; n < qty; n++) {
+        const winEntry = pickWithLuck(c.items, user.luckMul || 1, c.price);
+        wins.push(window.ABD_ITEMS[winEntry.id]);
+      }
+      const winItem = wins[wins.length - 1];
 
       const strip = [];
       for (let i = 0; i < 80; i++) {
@@ -133,7 +145,7 @@
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          roul.style.transition = "transform 5.2s cubic-bezier(.15,.72,.05,.99)";
+          roul.style.transition = this.fast ? "transform .35s linear" : "transform 5.2s cubic-bezier(.15,.72,.05,.99)";
           roul.style.transform = "translate3d(" + (-target) + "px,0,0)";
         });
       });
@@ -143,30 +155,32 @@
 
       if (this.timer) clearTimeout(this.timer);
       this.timer = setTimeout(() => {
-        const drop = window.ABD.giveItem(winItem.id, c.name);
-        window.ABD.addLive({
-          nick: user.nick || user.email.split("@")[0],
-          itemId: winItem.id,
-          name: winItem.name,
-          file: winItem.file,
-          rarity: winItem.rarity,
-          caseName: c.name,
-          at: Date.now()
+        wins.forEach((it) => {
+          window.ABD.giveItem(it.id, c.name);
+          window.ABD.addLive({
+            nick: user.nick || user.email.split("@")[0],
+            itemId: it.id,
+            name: it.name,
+            file: it.file,
+            rarity: it.rarity,
+            caseName: c.name,
+            at: Date.now()
+          });
         });
         if (result) {
           result.classList.remove("hidden");
-          result.innerHTML = `
+          result.innerHTML = wins.map((it) => `
             <div class="result-card pop">
-              <img src="${itemImg(winItem)}" alt="">
-              <h3>${winItem.name}</h3>
-              <p>${ABD_RARITY[winItem.rarity].label} · ${formatAZ(winItem.price)}</p>
-            </div>`;
+              <img src="${itemImg(it)}" alt="">
+              <h3>${it.name}</h3>
+              <p>${ABD_RARITY[it.rarity].label} · ${formatAZ(it.price)}</p>
+            </div>`).join("");
         }
         this.spinning = false;
         window.ABD_APP.renderLive();
         window.ABD_APP.refreshHeader();
         if (btn) btn.disabled = false;
-      }, 5400);
+      }, this.fast ? 420 : 5400);
     }
   };
 })();

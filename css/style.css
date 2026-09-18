@@ -407,3 +407,5 @@ textarea { width: 100%; background: #101018; color: #fff; border: 1px solid var(
 .vs { font-weight: 800; font-size: 22px; color: #e10600; }
 .win-card { outline: 2px solid #22c55e; }
 .raffle-card { cursor: pointer; }
+
+.qty-row { display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:10px 0; }

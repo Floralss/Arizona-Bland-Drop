@@ -423,7 +423,7 @@
       if (e.target.id === "prMake") {
         const type = $("prType").value;
         const val = type === "item" ? $("prItem").value : $("prVal").value;
-        const err = window.ABD_PROMO.create($("prCode").value, type, val, $("prMax").value);
+        const err = window.ABD_PROMO.create($("prCode").value, ($("prKind")&&$("prKind").value)||"free", type, val, $("prMax").value, { bonusPct: ($("prPct")&&$("prPct").value)||0, giftCase: ($("prGift")&&$("prGift").value)||"" });
         window.ABD.toast(err || "Промокод создан");
         window.ABD_ADMIN.render();
       }
@@ -444,6 +444,14 @@
       if (e.target.id === "admShowDel") window.ABD_ADMIN.toggleDelList();
       const del = e.target.closest("[data-del-acc]");
       if (del) window.ABD_ADMIN.wipe(del.getAttribute("data-del-acc"));
+      const pick = e.target.closest("[data-pick-user]");
+      if (pick && $("admEmail")) $("admEmail").value = pick.getAttribute("data-pick-user");
+      const qtyBtn = e.target.closest("[data-spin-qty]");
+      if (qtyBtn && window.ABD_CASES_UI) {
+        window.ABD_CASES_UI.qty = Number(qtyBtn.getAttribute("data-spin-qty")) || 1;
+        window.ABD_CASES_UI.renderPage();
+      }
+      if (e.target.id === "spinFast") window.ABD_CASES_UI.fast = !!e.target.checked;
       if (e.target.id === "bellBtn" || e.target.closest("#bellBtn")) toggleBell();
       if (e.target.closest("[data-open-auth]")) {
         e.preventDefault();
@@ -529,7 +537,10 @@
         console.warn("firestore user", e && e.message);
       }
       profile.role = window.ABD.roleOf(profile.email, profile.role);
-      window.ABD.user = Object.assign({}, profile, { uid: user.uid, email: email });
+      if (window.ABD.user && window.ABD.user.email === email && window.ABD.user.publicId) {
+        profile.publicId = window.ABD.user.publicId;
+      }
+      window.ABD.user = Object.assign({}, profile, { uid: user.uid, email: email, publicId: profile.publicId || (window.ABD.user && window.ABD.user.publicId) });
       window.ABD.ensurePublicId(window.ABD.user);
       window.ABD.saveLocal();
       refreshHeader();
