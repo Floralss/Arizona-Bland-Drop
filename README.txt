@@ -89,4 +89,4 @@ Firebase
 
 Соцсети
 -------
-Telegram: https://t.me/arizonabland
+Telegram: https://t.me/blandrussiarp

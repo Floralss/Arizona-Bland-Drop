@@ -1,5 +1,5 @@
 (function () {
-  const pages = ["home", "case", "upgrade", "profile", "admin", "fair", "wheel"];
+  const pages = ["home", "case", "upgrade", "profile", "admin", "fair", "wheel", "battle", "raffle"];
 
   function $(id) { return document.getElementById(id); }
 
@@ -15,6 +15,8 @@
     if (name === "profile") renderProfile();
     if (name === "admin") window.ABD_ADMIN.render();
     if (name === "wheel") window.ABD_WHEEL.render();
+    if (name === "battle") window.ABD_BATTLE.render();
+    if (name === "raffle") window.ABD_RAFFLE.render();
     if (name === "case" && window.ABD_CASES_UI.current) window.ABD_CASES_UI.renderPage();
     history.replaceState(null, "", "#" + name);
   }
@@ -123,6 +125,11 @@
             <p style="color:var(--gold)">${formatAZ(best.price)}</p>
           </div>` : "<p style='color:var(--mute)'>Пока пусто — открой первый кейс.</p>"}
         </div>
+      </div>
+      <div class="panel" style="margin:12px 0">
+        <h3>Промокод</h3>
+        <div class="field"><input id="promoCode" placeholder="BLAND2026"></div>
+        <button class="btn" id="promoGo">Активировать</button>
       </div>
       <div class="section-title"><h3>Инвентарь</h3><span>${u.inventory.length} предметов</span></div>
       <div class="inv-pick">${u.inventory.map((d) => `
@@ -406,6 +413,34 @@
       if (e.target.id === "admLuckOff") window.ABD_ADMIN.luck($("admEmail").value, 1);
       if (e.target.id === "admCastBtn") window.ABD_ADMIN.broadcast();
       if (e.target.id === "admResetBal") window.ABD_ADMIN.resetBalances();
+      if (e.target.id === "promoGo") {
+        window.ABD_PROMO.redeem(($("promoCode") && $("promoCode").value) || "").then((err) => {
+          window.ABD.toast(err || "Промокод активирован");
+          refreshHeader();
+          renderProfile();
+        });
+      }
+      if (e.target.id === "prMake") {
+        const type = $("prType").value;
+        const val = type === "item" ? $("prItem").value : $("prVal").value;
+        const err = window.ABD_PROMO.create($("prCode").value, type, val, $("prMax").value);
+        window.ABD.toast(err || "Промокод создан");
+        window.ABD_ADMIN.render();
+      }
+      if (e.target.id === "rfMake") {
+        const type = $("rfType").value;
+        const val = type === "item" ? $("rfItem").value : $("rfBc").value;
+        const err = window.ABD_RAFFLE.create($("rfTitle").value, type, val, $("rfHours").value);
+        window.ABD.toast(err || "Розыгрыш создан");
+      }
+      if (e.target.id === "btBot") window.ABD_BATTLE.startBot();
+      if (e.target.id === "btCreate") window.ABD_BATTLE.create();
+      const joinBt = e.target.closest("[data-bt-join]");
+      if (joinBt) window.ABD_BATTLE.join(joinBt.getAttribute("data-bt-join"));
+      const rfOpen = e.target.closest("[data-rf-open]");
+      if (rfOpen) window.ABD_RAFFLE.open(rfOpen.getAttribute("data-rf-open"));
+      const rfJoin = e.target.closest("[data-rf-join]");
+      if (rfJoin) window.ABD_RAFFLE.join(rfJoin.getAttribute("data-rf-join"));
       if (e.target.id === "admShowDel") window.ABD_ADMIN.toggleDelList();
       const del = e.target.closest("[data-del-acc]");
       if (del) window.ABD_ADMIN.wipe(del.getAttribute("data-del-acc"));

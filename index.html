@@ -29,6 +29,8 @@
             <svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 3l2.2 4.6L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.6L12 3z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
             Бонусы
           </a>
+          <a href="#battle" data-go="battle">Битва</a>
+          <a href="#raffle" data-go="raffle">Розыгрыш</a>
           <a href="#admin" data-go="admin" id="navAdmin" class="hidden">Админка</a>
         </nav>
         <div class="top-actions">
@@ -75,6 +77,14 @@
           <img src="assets/cases/case-acc.png" alt="">
           <span>КОЛЕСО</span>
         </button>
+        <button class="mode purple" data-go="battle">
+          <img src="assets/cases/case-auto.png" alt="">
+          <span>БИТВА</span>
+        </button>
+        <button class="mode green" data-go="raffle">
+          <img src="assets/cases/case-admin.png" alt="">
+          <span>РОЗЫГРЫШ</span>
+        </button>
       </div>
       <div class="col-title">◆ КЕЙСЫ BLAND RUSSIA ◆</div>
       <div class="cases" id="casesGrid"></div>
@@ -100,6 +110,8 @@
       <div id="upgradeStage"></div>
     </section>
 
+    <section class="page" id="battlePage"></section>
+    <section class="page" id="rafflePage"></section>
     <section class="page" id="profilePage"><div id="profileBody"></div></section>
     <section class="page" id="adminPage"></section>
     <section class="page" id="fairPage">
@@ -111,7 +123,7 @@
     </section>
 
     <footer class="footer">
-      <div>Bland Case · Bland Russia · <a href="https://t.me/arizonabland" target="_blank" rel="noopener">t.me/arizonabland</a></div>
+      <div>Bland Case · Bland Russia · <a href="https://t.me/blandrussiarp" target="_blank" rel="noopener">t.me/blandrussiarp</a></div>
       <div>Вывод предметов на игровой аккаунт</div>
     </footer>
   </div>
@@ -180,6 +192,9 @@
   <script src="js/upgrade.js"></script>
   <script src="js/wheel.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/promo.js"></script>
+  <script src="js/battle.js"></script>
+  <script src="js/giveaway.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

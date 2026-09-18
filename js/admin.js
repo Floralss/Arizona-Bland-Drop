@@ -85,6 +85,31 @@
                 <button class="btn ghost" id="admResetBal">Обнулить всем баланс</button>
               </div>
               <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+              <h3>Промокоды</h3>
+              <div class="field"><label>Код</label><input id="prCode" placeholder="START100"></div>
+              <div class="field"><label>Тип</label>
+                <select id="prType"><option value="bc">BC</option><option value="item">Предмет</option></select>
+              </div>
+              <div class="field"><label>Сумма BC или предмет</label>
+                <input id="prVal" placeholder="1000">
+                <select id="prItem">${Object.values(window.ABD_ITEMS).map((it) => `<option value="${it.id}">${it.name}</option>`).join("")}</select>
+              </div>
+              <div class="field"><label>Сколько активаций</label><input id="prMax" type="number" value="50"></div>
+              <button class="btn" id="prMake">Создать промокод</button>
+              <div class="muted" style="margin:8px 0">${(window.ABD_PROMO ? window.ABD_PROMO.list() : []).map((p) => p.code + " · " + p.used + "/" + p.max).join("<br>") || "пока нет"}</div>
+              <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+              <h3>Розыгрыш</h3>
+              <div class="field"><label>Название</label><input id="rfTitle" placeholder="Розыгрыш G63"></div>
+              <div class="field"><label>Приз</label>
+                <select id="rfType"><option value="item">Предмет</option><option value="bc">BC</option></select>
+              </div>
+              <div class="field">
+                <select id="rfItem">${Object.values(window.ABD_ITEMS).map((it) => `<option value="${it.id}">${it.name}</option>`).join("")}</select>
+                <input id="rfBc" type="number" value="5000" placeholder="BC">
+              </div>
+              <div class="field"><label>Через сколько часов итоги</label><input id="rfHours" type="number" value="24"></div>
+              <button class="btn" id="rfMake">Создать розыгрыш</button>
+              <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
               <h3>Удалить аккаунт</h3>
               <button class="btn" id="admShowDel">Открыть список игроков</button>
               <div id="admDelBox" class="hidden" style="margin-top:10px">

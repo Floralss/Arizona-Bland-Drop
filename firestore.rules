@@ -50,5 +50,19 @@ service cloud.firestore {
     match /gifts/{id} {
       allow read, write: if signedIn();
     }
+
+    match /promos/{id} {
+      allow read: if signedIn();
+      allow write: if signedIn();
+    }
+    match /promoUsed/{id} {
+      allow read, write: if signedIn();
+    }
+    match /battles/{id} {
+      allow read, write: if signedIn();
+    }
+    match /raffles/{id} {
+      allow read, write: if signedIn();
+    }
   }
 }
