@@ -103,7 +103,8 @@
     },
 
     loadLocal() {
-      try { this.user = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) { this.user = null; }
+      this.user = null;
+      localStorage.removeItem(LS_KEY);
       try { this.orders = JSON.parse(localStorage.getItem(LS_ORDERS) || "[]"); } catch (e) { this.orders = []; }
       try { this.live = JSON.parse(localStorage.getItem(LS_LIVE) || "[]"); } catch (e) { this.live = []; }
       try { this.usersIndex = JSON.parse(localStorage.getItem(LS_USERS) || "[]"); } catch (e) { this.usersIndex = []; }
@@ -368,7 +369,11 @@
       return null;
     },
 
-    registerLocal(email, nick, pass, refNick) {
+    registerLocal() {
+      this.toast("Только Firebase. Локальные аккаунты выключены");
+      return null;
+    },
+    registerLocalOff(email, nick, pass, refNick) {
       email = (email || "").trim().toLowerCase();
       nick = (nick || "").trim();
       if (!email || !pass || !nick) return { ok: false, err: "Заполни почту, ник и пароль" };
@@ -388,7 +393,10 @@
       return { ok: true };
     },
 
-    loginWithPass(login, pass) {
+    loginWithPass() {
+      return { ok: false, err: "Только вход через Firebase" };
+    },
+    loginWithPassOff(login, pass) {
       const row = this.findByLogin(login);
       if (!row || !row.email) return { ok: false, err: "Аккаунт не найден" };
       const pack = this.loadPack(row.email) || row;
@@ -403,7 +411,11 @@
       return { ok: true };
     },
 
-    loginLocal(email, nick) {
+    loginLocal() {
+      this.toast("Только Firebase. Локальный вход выключен");
+      return null;
+    },
+    loginLocalOff(email, nick) {
       email = (email || "").trim().toLowerCase();
       const known = this.usersIndex.find((u) => u.email === email);
       const saved = this.loadPack(email) || {};

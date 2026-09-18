@@ -541,7 +541,12 @@
       });
     } catch (e) {}
     fb.onAuthStateChanged(fb.auth, async (user) => {
-      if (!user) return;
+      if (!user) {
+        window.ABD.logout();
+        refreshHeader();
+        if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
+        return;
+      }
       const email = (user.email || "").toLowerCase();
       const local = window.ABD.mergeKeep(
         window.ABD.loadPack(email) || {},
