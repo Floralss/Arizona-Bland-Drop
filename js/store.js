@@ -33,6 +33,36 @@
     return "abd_inv_" + email;
   }
 
+  function mergeKeep(a, b) {
+    a = a || {};
+    b = b || {};
+    const out = Object.assign({}, a, b);
+    out.email = String(b.email || a.email || "").toLowerCase();
+    out.uid = (b.uid && String(b.uid).indexOf("demo-") !== 0 && b.uid !== "local") ? b.uid : (a.uid || b.uid);
+    out.nick = b.nick || a.nick || "";
+    out.publicId = a.publicId || b.publicId || null;
+    out.balance = Math.max(Number(a.balance || 0), Number(b.balance || 0));
+    out.totalDeposited = Math.max(Number(a.totalDeposited || 0), Number(b.totalDeposited || 0));
+    out.luckMul = a.luckMul || b.luckMul || 1;
+    out.role = a.role === "owner" || b.role === "owner" ? "owner" : (a.role === "worker" || b.role === "worker" ? "worker" : (b.role || a.role || "user"));
+    const inv = [];
+    const seen = {};
+    (a.inventory || []).concat(b.inventory || []).forEach((it) => {
+      if (!it) return;
+      const k = it.uid || (it.itemId + ":" + it.at + ":" + it.name);
+      if (seen[k]) return;
+      seen[k] = 1;
+      inv.push(it);
+    });
+    out.inventory = inv;
+    const ba = a.bestDrop || null;
+    const bb = b.bestDrop || null;
+    out.bestDrop = ba && bb ? ((ba.price || 0) >= (bb.price || 0) ? ba : bb) : (ba || bb);
+    out.depBonusPct = b.depBonusPct != null ? b.depBonusPct : a.depBonusPct;
+    out.depGiftCase = b.depGiftCase || a.depGiftCase || "";
+    return out;
+  }
+
   const store = {
     user: null,
     live: [],
@@ -40,6 +70,8 @@
     usersIndex: [],
     inbox: {},
     online: false,
+
+    mergeKeep: mergeKeep,
 
     toast(msg) {
       const el = document.getElementById("toast");
@@ -57,6 +89,10 @@
 
     saveLocal() {
       if (this.user) {
+        if (this.user.email) {
+          const pack = this.loadPack(this.user.email);
+          if (pack) this.user = mergeKeep(pack, this.user);
+        }
         localStorage.setItem(LS_KEY, JSON.stringify(this.user));
         if (this.user.email) localStorage.setItem(packKey(this.user.email), JSON.stringify(this.user));
       }
@@ -73,6 +109,10 @@
       try { this.usersIndex = JSON.parse(localStorage.getItem(LS_USERS) || "[]"); } catch (e) { this.usersIndex = []; }
       try { this.inbox = JSON.parse(localStorage.getItem(LS_INBOX) || "{}"); } catch (e) { this.inbox = {}; }
       if (this.user) {
+        if (this.user.email) {
+          const pack = this.loadPack(this.user.email);
+          if (pack) this.user = mergeKeep(pack, this.user);
+        }
         this.user.role = this.roleOf(this.user.email, this.user.role);
         this.ensurePublicId(this.user);
         if (this.user.luckMul == null) this.user.luckMul = 1;
@@ -261,8 +301,9 @@
           balance: this.user.balance,
           luckMul: this.user.luckMul || 1,
           role: this.user.role,
-          inventory: this.user.inventory,
-          bestDrop: this.user.bestDrop,
+          inventory: this.user.inventory || [],
+          bestDrop: this.user.bestDrop || null,
+          totalDeposited: this.user.totalDeposited || 0,
           updatedAt: fb.serverTimestamp()
         }, { merge: true });
         await fb.db.collection("directory").doc(String(this.user.email).toLowerCase()).set({

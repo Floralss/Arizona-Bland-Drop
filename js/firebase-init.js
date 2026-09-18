@@ -18,7 +18,6 @@
 
   const auth = firebase.auth();
   const db = firebase.firestore();
-  try { db.settings({ ignoreUndefinedProperties: true }); } catch (e) {}
 
   function doc(database, col, id) {
     return database.collection(col).doc(id);
@@ -62,8 +61,8 @@
     return q;
   }
 
-  function onSnapshot(q, cb) {
-    return q.onSnapshot(cb);
+  function onSnapshot(q, cb, err) {
+    return q.onSnapshot(cb, err || function () {});
   }
 
   function serverTimestamp() {

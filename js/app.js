@@ -303,7 +303,11 @@
     if (modal) modal.classList.add("hidden");
   }
 
+  let authBusy = false;
   async function tryFirebaseAuth(mode) {
+    if (authBusy) return;
+    authBusy = true;
+    try {
     if (mode === "reg") {
       const email = ($("regEmail").value || "").trim().toLowerCase();
       const nick = ($("regNick").value || "").trim();
@@ -315,6 +319,22 @@
       const fb = await waitFirebase(5000);
       if (!fb) return window.ABD.toast("Firebase не загрузился. Локальные аккаунты отключены");
       try {
+        let methods = [];
+        try { methods = await fb.auth.fetchSignInMethodsForEmail(email); } catch (e) {}
+        if (methods && methods.length) {
+          const cred = await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+          const profile = await fb.upsertUserDoc(cred.user, { nick: nick });
+          window.ABD.user = window.ABD.mergeKeep(window.ABD.loadPack(email) || {}, profile);
+          window.ABD.user.uid = cred.user.uid;
+          window.ABD.user.email = email;
+          window.ABD.saveLocal();
+          closeAuth();
+          refreshHeader();
+          renderProfile();
+          go("profile");
+          window.ABD.toast("Этот аккаунт уже был — вошли в него");
+          return;
+        }
         const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
         if (nick) {
           try { await fb.updateProfile(cred.user, { displayName: nick }); } catch (e) {}
@@ -384,6 +404,9 @@
       window.ABD.toast("Вход выполнен");
     } catch (e) {
       window.ABD.toast(fbError(e));
+    }
+    } finally {
+      authBusy = false;
     }
   }
 
@@ -460,8 +483,7 @@
       if (e.target.closest("[data-close-auth]")) closeAuth();
       if (e.target.id === "toReg") showAuth("reg");
       if (e.target.id === "toLogin") showAuth("login");
-      if (e.target.id === "btnLogin") tryFirebaseAuth("login");
-      if (e.target.id === "btnReg") tryFirebaseAuth("reg");
+      if (e.target.id === "btnLogin" || e.target.id === "btnReg") return;
       if (e.target.id === "bindFb") bindLocalToFirebase();
       if (e.target.id === "btnLogout") {
         if (window.ABD_FB) window.ABD_FB.signOut(window.ABD_FB.auth).catch(() => {});
@@ -521,28 +543,29 @@
     fb.onAuthStateChanged(fb.auth, async (user) => {
       if (!user) return;
       const email = (user.email || "").toLowerCase();
-      let profile = {
-        uid: user.uid,
-        email: email,
-        nick: user.displayName || email.split("@")[0],
-        balance: 0,
-        role: window.ABD.roleOf(email, "user"),
-        inventory: [],
-        bestDrop: null
-      };
+      const local = window.ABD.mergeKeep(
+        window.ABD.loadPack(email) || {},
+        (window.ABD.user && window.ABD.user.email === email) ? window.ABD.user : {}
+      );
+      let remote = {};
       try {
-        const saved = await fb.upsertUserDoc(user, profile);
-        if (saved) profile = Object.assign(profile, saved);
+        remote = await fb.upsertUserDoc(user, {
+          email: email,
+          nick: local.nick || user.displayName || email.split("@")[0],
+          publicId: local.publicId || null,
+          role: window.ABD.roleOf(email, local.role)
+        }) || {};
       } catch (e) {
         console.warn("firestore user", e && e.message);
       }
-      profile.role = window.ABD.roleOf(profile.email, profile.role);
-      if (window.ABD.user && window.ABD.user.email === email && window.ABD.user.publicId) {
-        profile.publicId = window.ABD.user.publicId;
-      }
-      window.ABD.user = Object.assign({}, profile, { uid: user.uid, email: email, publicId: profile.publicId || (window.ABD.user && window.ABD.user.publicId) });
+      const merged = window.ABD.mergeKeep(local, remote);
+      merged.uid = user.uid;
+      merged.email = email;
+      merged.role = window.ABD.roleOf(email, merged.role);
+      window.ABD.user = merged;
       window.ABD.ensurePublicId(window.ABD.user);
       window.ABD.saveLocal();
+      window.ABD.persistUser();
       refreshHeader();
       closeAuth();
       if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
@@ -550,13 +573,11 @@
         fb.db.collection("users").doc(user.uid).onSnapshot((s) => {
           if (!s.exists || !window.ABD.user) return;
           const d = s.data() || {};
-          if (d.balance != null) window.ABD.user.balance = d.balance;
-          if (d.inventory) window.ABD.user.inventory = d.inventory;
-          if (d.nick) window.ABD.user.nick = d.nick;
+          window.ABD.user = window.ABD.mergeKeep(window.ABD.user, d);
           window.ABD.saveLocal();
           refreshHeader();
           if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
-        });
+        }, function () {});
       } catch (e) {}
       try {
         fb.db.collection("gifts").where("email", "==", email).onSnapshot((snap) => {

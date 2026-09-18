@@ -1,0 +1,4 @@
+1. Открой https://console.firebase.google.com/project/novus-roleplay/firestore/rules
+2. Сотри старые правила.
+3. Вставь содержимое firestore.rules
+4. Publish
