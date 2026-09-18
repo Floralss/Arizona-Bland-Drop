@@ -41,7 +41,14 @@
     out.uid = (b.uid && String(b.uid).indexOf("demo-") !== 0 && b.uid !== "local") ? b.uid : (a.uid || b.uid);
     out.nick = b.nick || a.nick || "";
     out.publicId = a.publicId || b.publicId || null;
-    out.balance = Math.max(Number(a.balance || 0), Number(b.balance || 0));
+    const balA = Number(a.balance || 0);
+    const balB = Number(b.balance || 0);
+    const atA = Number(a.balAt || a.updatedAt || 0);
+    const atB = Number(b.balAt || b.updatedAt || 0);
+    if (balB > balA) out.balance = balB;
+    else if (atB >= atA) out.balance = balB;
+    else out.balance = balA;
+    out.balAt = Math.max(atA, atB, Date.now());
     out.totalDeposited = Math.max(Number(a.totalDeposited || 0), Number(b.totalDeposited || 0));
     out.luckMul = a.luckMul || b.luckMul || 1;
     out.role = a.role === "owner" || b.role === "owner" ? "owner" : (a.role === "worker" || b.role === "worker" ? "worker" : (b.role || a.role || "user"));
@@ -89,10 +96,7 @@
 
     saveLocal() {
       if (this.user) {
-        if (this.user.email) {
-          const pack = this.loadPack(this.user.email);
-          if (pack) this.user = mergeKeep(pack, this.user);
-        }
+        this.user.balAt = Date.now();
         localStorage.setItem(LS_KEY, JSON.stringify(this.user));
         if (this.user.email) localStorage.setItem(packKey(this.user.email), JSON.stringify(this.user));
       }
@@ -305,6 +309,7 @@
           inventory: this.user.inventory || [],
           bestDrop: this.user.bestDrop || null,
           totalDeposited: this.user.totalDeposited || 0,
+          balAt: this.user.balAt || Date.now(),
           updatedAt: fb.serverTimestamp()
         }, { merge: true });
         await fb.db.collection("directory").doc(String(this.user.email).toLowerCase()).set({
