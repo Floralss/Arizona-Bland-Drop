@@ -311,6 +311,8 @@ img { max-width: 100%; display: block; }
   background: #161822; border: 1px solid var(--line);
   border-radius: 20px; padding: 18px; box-shadow: var(--shadow);
 }
+.auth-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.auth-side { display: flex; flex-direction: column; gap: 6px; color: var(--mute); font-size: 12px; }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .close { background: transparent; border: 0; color: var(--mute); font-size: 22px; cursor: pointer; }
 .bell-btn {

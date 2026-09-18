@@ -180,6 +180,59 @@
       if (fb) fb.addDoc(fb.collection(fb.db, "liveDrops"), drop).catch(() => {});
     },
 
+    passHash(email, pass) {
+      return btoa(unescape(encodeURIComponent(String(email || "").toLowerCase() + "|" + String(pass || ""))));
+    },
+
+    findByLogin(login) {
+      login = String(login || "").trim().toLowerCase();
+      if (!login) return null;
+      const byEmail = this.usersIndex.find((u) => (u.email || "").toLowerCase() === login);
+      if (byEmail) return byEmail;
+      const byNick = this.usersIndex.find((u) => (u.nick || "").toLowerCase() === login);
+      if (byNick) return byNick;
+      if (login.indexOf("@") >= 0) {
+        const pack = this.loadPack(login);
+        if (pack) return pack;
+      }
+      return null;
+    },
+
+    registerLocal(email, nick, pass, refNick) {
+      email = (email || "").trim().toLowerCase();
+      nick = (nick || "").trim();
+      if (!email || !pass || !nick) return { ok: false, err: "Заполни почту, ник и пароль" };
+      if (pass.length < 6) return { ok: false, err: "Пароль минимум 6 символов" };
+      const exists = this.loadPack(email) || this.usersIndex.find((u) => u.email === email);
+      if (exists && exists.passHash) return { ok: false, err: "Эта почта уже занята — войди" };
+      this.loginLocal(email, nick);
+      this.user.passHash = this.passHash(email, pass);
+      this.user.refNick = (refNick || "").trim() || null;
+      this.savePack(email, this.user);
+      this.upsertIndex(this.user);
+      this.saveLocal();
+      if (this.user.refNick) {
+        const ref = this.usersIndex.find((u) => (u.nick || "").toLowerCase() === this.user.refNick.toLowerCase());
+        if (ref && ref.email) this.notify(ref.email, "Реферал", "По твоей рефке зарегистрировался " + nick);
+      }
+      return { ok: true };
+    },
+
+    loginWithPass(login, pass) {
+      const row = this.findByLogin(login);
+      if (!row || !row.email) return { ok: false, err: "Аккаунт не найден" };
+      const pack = this.loadPack(row.email) || row;
+      const hash = this.passHash(pack.email || row.email, pass);
+      if (pack.passHash && pack.passHash !== hash) return { ok: false, err: "Неверный пароль" };
+      if (!pack.passHash && row.passHash && row.passHash !== hash) return { ok: false, err: "Неверный пароль" };
+      this.loginLocal(row.email, pack.nick || row.nick);
+      if (!this.user.passHash) {
+        this.user.passHash = hash;
+        this.savePack(this.user.email, this.user);
+      }
+      return { ok: true };
+    },
+
     loginLocal(email, nick) {
       email = (email || "").trim().toLowerCase();
       const known = this.usersIndex.find((u) => u.email === email);
@@ -193,7 +246,9 @@
         inventory: saved.inventory || [],
         bestDrop: saved.bestDrop || null,
         publicId: saved.publicId || (known && known.publicId) || null,
-        luckMul: saved.luckMul || (known && known.luckMul) || 1
+        luckMul: saved.luckMul || (known && known.luckMul) || 1,
+        passHash: saved.passHash || null,
+        refNick: saved.refNick || null
       });
       this.ensurePublicId(this.user);
       this.upsertIndex(this.user);
@@ -347,6 +402,55 @@
     removeOrder(id) {
       this.orders = (this.orders || []).filter((o) => o.id !== id);
       this.saveLocal();
+    },
+
+    listAccounts() {
+      const map = {};
+      (this.usersIndex || []).forEach((u) => {
+        if (!u || !u.email) return;
+        map[u.email] = Object.assign({}, u);
+      });
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf("abd_inv_") !== 0) continue;
+        try {
+          const pack = JSON.parse(localStorage.getItem(k) || "null");
+          if (pack && pack.email) {
+            map[pack.email] = Object.assign({}, map[pack.email] || {}, pack);
+          }
+        } catch (e) {}
+      }
+      if (this.user && this.user.email) {
+        map[this.user.email] = Object.assign({}, map[this.user.email] || {}, this.user);
+      }
+      return Object.keys(map).map((email) => map[email]).sort((a, b) => Number(a.publicId || 0) - Number(b.publicId || 0));
+    },
+
+    async deleteAccount(email) {
+      email = String(email || "").toLowerCase();
+      if (!email) return false;
+      const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email) || this.loadPack(email) || {};
+      localStorage.removeItem("abd_inv_" + email);
+      this.usersIndex = (this.usersIndex || []).filter((x) => (x.email || "").toLowerCase() !== email);
+      if (this.inbox) delete this.inbox[email];
+      this.orders = (this.orders || []).filter((o) => (o.email || "").toLowerCase() !== email);
+      if (this.user && (this.user.email || "").toLowerCase() === email) {
+        this.user = null;
+        localStorage.removeItem("abd_local_user");
+      }
+      this.saveLocal();
+      const fb = window.ABD_FB;
+      if (fb) {
+        try {
+          await fb.setDoc(fb.doc(fb.db, "profiles", email), { deleted: true, email: email }, { merge: true });
+        } catch (e) {}
+        try {
+          if (row.uid && String(row.uid).indexOf("demo-") !== 0 && row.uid !== "local") {
+            await fb.setDoc(fb.doc(fb.db, "users", row.uid), { deleted: true, email: email }, { merge: true });
+          }
+        } catch (e) {}
+      }
+      return true;
     },
 
     resetAllBalances() {

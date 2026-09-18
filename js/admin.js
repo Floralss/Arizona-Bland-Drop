@@ -80,6 +80,20 @@
               <div class="field" style="margin-top:14px">
                 <button class="btn ghost" id="admResetBal">Обнулить всем баланс</button>
               </div>
+              <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+              <h3>Удалить аккаунт</h3>
+              <button class="btn" id="admShowDel">Открыть список игроков</button>
+              <div id="admDelBox" class="hidden" style="margin-top:10px">
+                <table class="table">
+                  <tr><th>Ник в игре</th><th>ID</th><th>Почта</th><th></th></tr>
+                  ${(window.ABD.listAccounts ? window.ABD.listAccounts() : users).map((x) => `<tr>
+                    <td>${x.nick || "без ника"}</td>
+                    <td>#${x.publicId || "—"}</td>
+                    <td><small>${x.email || ""}</small></td>
+                    <td><button class="btn ghost" data-del-acc="${x.email}">Удалить</button></td>
+                  </tr>`).join("")}
+                </table>
+              </div>
               <h4 style="margin:18px 0 8px">Игроки</h4>
               <table class="table">
                 <tr><th>ID</th><th>Ник</th><th>Роль</th><th>Удача</th><th>Баланс</th></tr>
@@ -151,6 +165,27 @@
       window.ABD.giveItemToEmail(t.email, itemId, "Админ-выдача");
       this.render();
       window.ABD.toast("Предмет выдан #" + t.publicId);
+    },
+
+    toggleDelList() {
+      const box = document.getElementById("admDelBox");
+      if (!box) return;
+      box.classList.toggle("hidden");
+    },
+
+    async wipe(email) {
+      if (!can("owner")) return window.ABD.toast("Только владелец");
+      if (!email) return;
+      if (!confirm("Удалить аккаунт " + email + " навсегда?")) return;
+      const self = window.ABD.user && window.ABD.user.email === email;
+      await window.ABD.deleteAccount(email);
+      window.ABD.toast("Аккаунт удалён");
+      if (self) {
+        window.ABD_APP.refreshHeader();
+        window.ABD_APP.go("home");
+        return;
+      }
+      this.render();
     },
 
     broadcast() {

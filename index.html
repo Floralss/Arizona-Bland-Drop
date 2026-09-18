@@ -33,7 +33,7 @@
         </nav>
         <div class="top-actions">
           <div id="authButtons">
-            <button class="btn purple" data-go="profile">Войти</button>
+            <button class="btn purple" data-open-auth="login">Войти</button>
           </div>
           <div id="userBox" class="hidden" style="display:flex;gap:8px;align-items:center">
             <button class="bell-btn" id="bellBtn" type="button" title="Уведомления">
@@ -114,6 +114,34 @@
       <div>Bland Case · Bland Russia · <a href="https://t.me/arizonabland" target="_blank" rel="noopener">t.me/arizonabland</a></div>
       <div>Вывод предметов на игровой аккаунт</div>
     </footer>
+  </div>
+
+  <div class="modal-back hidden" id="authModal">
+    <div class="modal auth-modal">
+      <div class="modal-head"><h3 id="authTitle">Вход</h3><button class="close" data-close-auth>×</button></div>
+      <div id="authLogin">
+        <div class="field"><label>Почта или ник в игре</label><input id="loginEmail" placeholder="mail@gmail.com или Name_Surname"></div>
+        <div class="field"><label>Пароль</label><input id="loginPass" type="password" placeholder="пароль"></div>
+        <div class="auth-row">
+          <button class="btn purple" id="btnLogin" type="button">Войти</button>
+          <div class="auth-side">
+            <span>Если нет аккаунта — создайте</span>
+            <button class="btn ghost" id="toReg" type="button">Регистрация</button>
+          </div>
+        </div>
+      </div>
+      <div id="authReg" class="hidden">
+        <div class="field"><label>Почта</label><input id="regEmail" placeholder="you@mail.com"></div>
+        <div class="field"><label>Ник в игре</label><input id="regNick" placeholder="Name_Surname"></div>
+        <div class="field"><label>Пароль</label><input id="regPass" type="password" placeholder="минимум 6 символов"></div>
+        <div class="field"><label>Повтори пароль</label><input id="regPass2" type="password" placeholder="ещё раз"></div>
+        <div class="field"><label>Рефка — ник того, кто пригласил (необязательно)</label><input id="regRef" placeholder="можно пусто"></div>
+        <div class="auth-row">
+          <button class="btn purple" id="btnReg" type="button">Создать аккаунт</button>
+          <button class="btn ghost" id="toLogin" type="button">Уже есть аккаунт</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="modal-back hidden" id="depModal">

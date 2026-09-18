@@ -87,17 +87,9 @@
     if (!u) {
       box.innerHTML = `
         <div class="panel" style="max-width:420px">
-          <h3>Вход</h3>
-          <p style="color:var(--mute);margin:8px 0 14px">Регистрация идёт в Firebase. Локальный аккаунт больше не создаётся.</p>
-          <p id="fbStatus" style="color:#f5d0fe;margin-bottom:12px;font-size:13px">Firebase: ${window.ABD_FB ? "подключён" : "не загрузился"}</p>
-          <div class="field"><label>Почта</label><input id="loginEmail" placeholder="you@mail.com"></div>
-          <div class="field"><label>Пароль</label><input id="loginPass" type="password" placeholder="минимум 6 символов"></div>
-          <div class="field"><label>Ник в игре</label><input id="loginNick" placeholder="Name_Surname"></div>
-          <div style="display:flex;gap:8px">
-            <button class="btn purple" id="btnLogin" type="button">Войти</button>
-            <button class="btn" id="btnReg" type="button">Регистрация</button>
-          </div>
-          <p style="color:var(--mute);margin-top:10px;font-size:12px">Если напишет «не включена почта» — в Firebase включи Email/Password.</p>
+          <h3>Профиль</h3>
+          <p style="color:var(--mute);margin:8px 0 14px">Сначала войди в аккаунт.</p>
+          <button class="btn purple" data-open-auth="login">Войти</button>
         </div>`;
       return;
     }
@@ -281,37 +273,77 @@
     return window.ABD_FB;
   }
 
+  function showAuth(mode) {
+    const modal = $("authModal");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    const login = $("authLogin");
+    const reg = $("authReg");
+    const title = $("authTitle");
+    if (mode === "reg") {
+      login.classList.add("hidden");
+      reg.classList.remove("hidden");
+      if (title) title.textContent = "Регистрация";
+    } else {
+      reg.classList.add("hidden");
+      login.classList.remove("hidden");
+      if (title) title.textContent = "Вход";
+    }
+  }
+
+  function closeAuth() {
+    const modal = $("authModal");
+    if (modal) modal.classList.add("hidden");
+  }
+
   async function tryFirebaseAuth(mode) {
-    const email = ($("loginEmail").value || "").trim().toLowerCase();
-    const pass = $("loginPass").value || "";
-    const nick = ($("loginNick").value || "").trim();
-    if (!email || !pass) return window.ABD.toast("Укажи почту и пароль");
-    const fb = await waitFirebase(5000);
-    if (!fb) {
-      window.ABD.toast("Firebase не загрузился. Открой сайт по https, не файлом");
+    if (mode === "reg") {
+      const email = ($("regEmail").value || "").trim().toLowerCase();
+      const nick = ($("regNick").value || "").trim();
+      const pass = $("regPass").value || "";
+      const pass2 = $("regPass2").value || "";
+      const ref = ($("regRef").value || "").trim();
+      if (!email || !nick || !pass) return window.ABD.toast("Заполни почту, ник и пароль");
+      if (pass !== pass2) return window.ABD.toast("Пароли не совпадают");
+      const fb = await waitFirebase(5000);
+      if (!fb) return window.ABD.toast("Firebase не загрузился. Локальные аккаунты отключены");
+      try {
+        const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
+        if (nick) await fb.updateProfile(cred.user, { displayName: nick });
+        const profile = await fb.upsertUserDoc(cred.user, {
+          nick: nick, role: window.ABD.roleOf(email, "user"), balance: 0, refNick: ref || null
+        });
+        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
+        window.ABD.saveLocal();
+        closeAuth();
+        refreshHeader();
+        renderProfile();
+        go("profile");
+        window.ABD.toast("Аккаунт создан в Firebase, ID #" + (window.ABD.user.publicId || "?"));
+      } catch (e) {
+        window.ABD.toast(fbError(e));
+      }
       return;
     }
+
+    const login = ($("loginEmail").value || "").trim();
+    const pass = $("loginPass").value || "";
+    if (!login || !pass) return window.ABD.toast("Напиши почту/ник и пароль");
+    const fb = await waitFirebase(5000);
+    if (!fb) return window.ABD.toast("Firebase не загрузился. Локальный вход отключён");
+    const email = login.indexOf("@") >= 0 ? login.toLowerCase() : null;
+    if (!email) return window.ABD.toast("Для входа нужна почта, не только ник");
     try {
-      let cred;
-      if (mode === "reg") {
-        cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
-        if (nick) await fb.updateProfile(cred.user, { displayName: nick });
-        const profile = await fb.upsertUserDoc(cred.user, { nick: nick, role: window.ABD.roleOf(email, "user"), balance: 0 });
-        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
-        window.ABD.ensurePublicId(window.ABD.user);
-        window.ABD.saveLocal();
-        window.ABD.toast("Аккаунт создан в базе, ID #" + (window.ABD.user.publicId || "?"));
-      } else {
-        cred = await fb.signInWithEmailAndPassword(fb.auth, email, pass);
-        const profile = await fb.upsertUserDoc(cred.user, { nick: nick });
-        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
-        window.ABD.saveLocal();
-        window.ABD.toast("Вход через Firebase");
-      }
+      const cred = await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+      const profile = await fb.upsertUserDoc(cred.user, {});
+      window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: (cred.user.email || email).toLowerCase() });
+      window.ABD.saveLocal();
+      closeAuth();
       refreshHeader();
       renderProfile();
+      go("profile");
+      window.ABD.toast("Вход выполнен");
     } catch (e) {
-      console.warn(e);
       window.ABD.toast(fbError(e));
     }
   }
@@ -336,7 +368,17 @@
       if (e.target.id === "admLuckOff") window.ABD_ADMIN.luck($("admEmail").value, 1);
       if (e.target.id === "admCastBtn") window.ABD_ADMIN.broadcast();
       if (e.target.id === "admResetBal") window.ABD_ADMIN.resetBalances();
+      if (e.target.id === "admShowDel") window.ABD_ADMIN.toggleDelList();
+      const del = e.target.closest("[data-del-acc]");
+      if (del) window.ABD_ADMIN.wipe(del.getAttribute("data-del-acc"));
       if (e.target.id === "bellBtn" || e.target.closest("#bellBtn")) toggleBell();
+      if (e.target.closest("[data-open-auth]")) {
+        e.preventDefault();
+        showAuth(e.target.closest("[data-open-auth]").getAttribute("data-open-auth") || "login");
+      }
+      if (e.target.closest("[data-close-auth]")) closeAuth();
+      if (e.target.id === "toReg") showAuth("reg");
+      if (e.target.id === "toLogin") showAuth("login");
       if (e.target.id === "btnLogin") tryFirebaseAuth("login");
       if (e.target.id === "btnReg") tryFirebaseAuth("reg");
       if (e.target.id === "bindFb") bindLocalToFirebase();
