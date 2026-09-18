@@ -14,9 +14,23 @@
   window.ABD_BATTLE = {
     current: null,
 
+    listen() {
+      const fb = window.ABD_FB;
+      if (!fb || !fb.db || this._on) return;
+      this._on = true;
+      fb.db.collection("battles").onSnapshot((snap) => {
+        const rows = [];
+        snap.forEach((doc) => rows.push(Object.assign({ id: doc.id }, doc.data())));
+        save(rows);
+        const page = document.getElementById("battlePage");
+        if (page && page.classList.contains("active") && !(this.current && this.current.status === "done")) this.render();
+      }, function () {});
+    },
+
     render() {
       const root = document.getElementById("battlePage");
       if (!root) return;
+      this.listen();
       const u = window.ABD.user;
       const list = load().filter((b) => b.status === "wait").slice(0, 12);
       const cur = this.current;

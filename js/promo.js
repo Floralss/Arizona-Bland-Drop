@@ -3,9 +3,13 @@
   const USED = "abd_promo_used";
 
   function load() {
+    if (window.ABD.promos && window.ABD.promos.length) return window.ABD.promos;
     try { return JSON.parse(localStorage.getItem(LS) || "[]"); } catch (e) { return []; }
   }
-  function save(list) { localStorage.setItem(LS, JSON.stringify(list)); }
+  function save(list) {
+    window.ABD.promos = list || [];
+    localStorage.setItem(LS, JSON.stringify(window.ABD.promos));
+  }
   function usedMap() {
     try { return JSON.parse(localStorage.getItem(USED) || "{}"); } catch (e) { return {}; }
   }
@@ -13,6 +17,16 @@
 
   window.ABD_PROMO = {
     list() { return load(); },
+    listen() {
+      const fb = window.ABD_FB;
+      if (!fb || !fb.db || this._on) return;
+      this._on = true;
+      fb.db.collection("promos").onSnapshot((snap) => {
+        const rows = [];
+        snap.forEach((doc) => rows.push(Object.assign({ code: doc.id }, doc.data())));
+        save(rows);
+      }, function () {});
+    },
 
     create(code, kind, type, value, maxUses, extra) {
       extra = extra || {};

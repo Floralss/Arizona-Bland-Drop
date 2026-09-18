@@ -575,6 +575,9 @@
       setTimeout(hookFirebase, 250);
       return;
     }
+    if (window.ABD_RAFFLE && window.ABD_RAFFLE.listen) window.ABD_RAFFLE.listen();
+    if (window.ABD_PROMO && window.ABD_PROMO.listen) window.ABD_PROMO.listen();
+    if (window.ABD_BATTLE && window.ABD_BATTLE.listen) window.ABD_BATTLE.listen();
     try {
       const q = fb.query(fb.collection(fb.db, "liveDrops"), fb.orderBy("at", "desc"), fb.limit(30));
       fb.onSnapshot(q, (snap) => {
