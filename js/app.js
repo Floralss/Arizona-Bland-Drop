@@ -131,13 +131,17 @@
         <div class="field"><input id="promoCode" placeholder="BLAND2026"></div>
         <button class="btn" id="promoGo">Активировать</button>
       </div>
-      <div class="section-title"><h3>Инвентарь</h3><span>${u.inventory.length} предметов</span></div>
+      <div class="section-title"><h3>Инвентарь</h3>
+        <span>${u.inventory.length} предметов</span>
+        ${u.inventory.length ? `<button class="btn" id="sellAllInv">Продать весь инв · ${formatAZ(u.inventory.reduce((s, d) => s + (Number(d.price) || 0), 0))}</button>` : ""}
+      </div>
       <div class="inv-pick">${u.inventory.map((d) => `
         <div class="inv-card">
           <img src="${itemImg(d)}" alt="">
           <b>${d.name}</b>
           <span class="price">${formatAZ(d.price)}</span>
-          <button class="btn ghost" style="margin-top:8px;width:100%" data-wd="${d.uid}">Вывести</button>
+          <button class="btn" style="margin-top:8px;width:100%" data-sell="${d.uid}">Продать</button>
+          <button class="btn ghost" style="margin-top:6px;width:100%" data-wd="${d.uid}">Вывести</button>
         </div>`).join("") || "<p style='color:var(--mute)'>Инвентарь пуст</p>"}</div>
     `;
   }
@@ -207,6 +211,33 @@
         btn.textContent = "Создать заявку";
       }
     }, 800);
+  }
+
+  function sellItem(uid) {
+    const u = window.ABD.user;
+    if (!u) return;
+    const item = (u.inventory || []).find((x) => x.uid === uid);
+    if (!item) return;
+    const price = Math.max(0, Math.floor(Number(item.price) || 0));
+    u.inventory = u.inventory.filter((x) => x.uid !== uid);
+    window.ABD.creditAz(u.email, price);
+    window.ABD.persistUser();
+    refreshHeader();
+    renderProfile();
+    window.ABD.toast("Продано: " + item.name + " · +" + formatAZ(price));
+  }
+
+  function sellAll() {
+    const u = window.ABD.user;
+    if (!u || !(u.inventory || []).length) return;
+    const sum = u.inventory.reduce((s, d) => s + Math.max(0, Math.floor(Number(d.price) || 0)), 0);
+    if (!confirm("Продать весь инвентарь за " + formatAZ(sum) + "?")) return;
+    u.inventory = [];
+    window.ABD.creditAz(u.email, sum);
+    window.ABD.persistUser();
+    refreshHeader();
+    renderProfile();
+    window.ABD.toast("Инвентарь продан · +" + formatAZ(sum));
   }
 
   async function withdraw(uid) {
@@ -514,6 +545,9 @@
       if (e.target.id === "sendDep" || e.target.closest("#sendDep")) sendDeposit();
       const wd = e.target.closest("[data-wd]");
       if (wd) withdraw(wd.getAttribute("data-wd"));
+      const sell = e.target.closest("[data-sell]");
+      if (sell) sellItem(sell.getAttribute("data-sell"));
+      if (e.target.id === "sellAllInv") sellAll();
       const ord = e.target.closest("[data-ord]");
       if (ord) window.ABD_ADMIN.setStatus(ord.getAttribute("data-ord"), ord.getAttribute("data-st"));
       if (e.target.id === "admSetRole") window.ABD_ADMIN.setRole($("admEmail").value, $("admRole").value);
