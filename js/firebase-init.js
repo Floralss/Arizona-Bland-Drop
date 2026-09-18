@@ -1,12 +1,12 @@
 (function () {
   const firebaseConfig = {
-    apiKey: "AIzaSyDEz-XYOs4HFboJKknVWKnRnaZptvNwxaA",
-    authDomain: "arizona-bland-drop-7a218.firebaseapp.com",
-    projectId: "arizona-bland-drop-7a218",
-    storageBucket: "arizona-bland-drop-7a218.firebasestorage.app",
-    messagingSenderId: "200802712663",
-    appId: "1:200802712663:web:df09108ede77e376ac7712",
-    measurementId: "G-1L32J2619G"
+    apiKey: "AIzaSyCDdPwaB8mH9TsM5hyXFbF0fNpFaWXjmV0",
+    authDomain: "novus-roleplay.firebaseapp.com",
+    projectId: "novus-roleplay",
+    storageBucket: "novus-roleplay.firebasestorage.app",
+    messagingSenderId: "207082104048",
+    appId: "1:207082104048:web:bbf438aba78c9a7e79ce35",
+    measurementId: "G-V0LK42BXRT"
   };
 
   if (!window.firebase) {

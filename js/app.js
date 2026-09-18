@@ -309,18 +309,50 @@
       if (!fb) return window.ABD.toast("Firebase не загрузился. Локальные аккаунты отключены");
       try {
         const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
-        if (nick) await fb.updateProfile(cred.user, { displayName: nick });
-        const profile = await fb.upsertUserDoc(cred.user, {
-          nick: nick, role: window.ABD.roleOf(email, "user"), balance: 0, refNick: ref || null
-        });
-        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
+        if (nick) {
+          try { await fb.updateProfile(cred.user, { displayName: nick }); } catch (e) {}
+        }
+        let profile = {
+          uid: cred.user.uid,
+          email: email,
+          nick: nick,
+          balance: 0,
+          role: window.ABD.roleOf(email, "user"),
+          inventory: [],
+          bestDrop: null,
+          refNick: ref || null
+        };
+        try {
+          profile = Object.assign(profile, await fb.upsertUserDoc(cred.user, profile));
+        } catch (e) {
+          console.warn("profile write", e);
+        }
+        window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email, nick: nick });
+        window.ABD.ensurePublicId(window.ABD.user);
         window.ABD.saveLocal();
         closeAuth();
         refreshHeader();
         renderProfile();
         go("profile");
-        window.ABD.toast("Аккаунт создан в Firebase, ID #" + (window.ABD.user.publicId || "?"));
+        window.ABD.toast("Добро пожаловать, " + nick);
       } catch (e) {
+        if (e && e.code === "auth/email-already-in-use") {
+          try {
+            const cred = await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+            const profile = await fb.upsertUserDoc(cred.user, { nick: nick });
+            window.ABD.user = Object.assign({}, profile, { uid: cred.user.uid, email: email });
+            window.ABD.saveLocal();
+            closeAuth();
+            refreshHeader();
+            renderProfile();
+            go("profile");
+            window.ABD.toast("Снова вошли в аккаунт");
+            return;
+          } catch (e2) {
+            window.ABD.toast(fbError(e2));
+            return;
+          }
+        }
         window.ABD.toast(fbError(e));
       }
       return;
