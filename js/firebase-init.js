@@ -107,11 +107,22 @@
     const snap = await ref.get({ source: "server" }).catch(function () { return ref.get(); });
     let data;
     if (snap.exists) {
-      data = Object.assign({}, snap.data(), extra, {
-        uid: user.uid,
-        email: String(user.email || extra.email || "").toLowerCase()
-      });
-      await ref.set(data, { merge: true });
+      data = Object.assign({}, snap.data());
+      data.uid = user.uid;
+      data.email = String(user.email || data.email || extra.email || "").toLowerCase();
+      if (extra.nick) data.nick = extra.nick;
+      if (extra.role) data.role = extra.role;
+      if (extra.publicId) data.publicId = extra.publicId;
+      if (extra.luckMul) data.luckMul = extra.luckMul;
+      if (extra.refNick) data.refNick = extra.refNick;
+      await ref.set({
+        uid: data.uid,
+        email: data.email,
+        nick: data.nick || extra.nick || "",
+        publicId: data.publicId || extra.publicId || null,
+        role: data.role || extra.role || "user",
+        updatedAt: Date.now()
+      }, { merge: true });
     } else {
       const publicId = extra.publicId || await nextPublicId();
       data = {
@@ -169,7 +180,9 @@
     onSnapshot: onSnapshot,
     serverTimestamp: serverTimestamp,
     nextPublicId: nextPublicId,
-    upsertUserDoc: upsertUserDoc
+    upsertUserDoc: upsertUserDoc,
+    increment: function (n) { return firebase.firestore.FieldValue.increment(n); },
+    where: function (field, op, val) { return field; }
   };
   window.ABD_FIREBASE_READY = true;
 })();

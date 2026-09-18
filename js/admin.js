@@ -13,6 +13,10 @@
   window.ABD_ADMIN = {
     can,
     render() {
+      if (!this._pulled && window.ABD.pullPlayers) {
+        this._pulled = true;
+        window.ABD.pullPlayers().then(() => this.render()).catch(() => {});
+      }
       const root = document.getElementById("adminPage");
       const u = window.ABD.user;
       if (!u || (u.role !== "owner" && u.role !== "worker")) {
@@ -135,10 +139,10 @@
       window.ABD_APP.refreshHeader();
     },
 
-    setRole(q, role) {
+    async setRole(q, role) {
       if (!can("owner")) return window.ABD.toast("Только владелец");
-      const t = targetOf(q);
-      if (!t) return window.ABD.toast("Игрок не найден. Сначала пусть войдёт.");
+      const t = await window.ABD.findTargetAsync(q);
+      if (!t || !t.email) return window.ABD.toast("Игрок не найден в базе.");
       t.role = role;
       if (window.ABD.user && window.ABD.user.email === t.email) window.ABD.user.role = role;
       const pack = window.ABD.loadPack(t.email);
@@ -148,23 +152,25 @@
       window.ABD.toast("Роль обновлена для #" + t.publicId);
     },
 
-    giveMoney(q, amount) {
+    async giveMoney(q, amount) {
       if (!can("owner")) return window.ABD.toast("Только владелец");
-      const t = targetOf(q);
-      if (!t) return window.ABD.toast("Нет такого ID. Игрок должен один раз войти.");
+      const t = await window.ABD.findTargetAsync(q);
+      if (!t || !t.email) return window.ABD.toast("Игрок не найден в базе. Проверь почту или ID");
       window.ABD.creditAz(t.email, amount);
+      window.ABD.notify(t.email, "Начисление", "Админ выдал " + formatAZ(amount));
       this.render();
       window.ABD_APP.refreshHeader();
-      window.ABD.toast("+" + formatAZ(amount) + " игроку #" + t.publicId);
+      window.ABD.toast("+" + formatAZ(amount) + " → " + (t.nick || t.email));
     },
 
-    giveItem(q, itemId) {
+    async giveItem(q, itemId) {
       if (!can("owner")) return window.ABD.toast("Только владелец");
-      const t = targetOf(q);
-      if (!t) return window.ABD.toast("Нет такого ID");
+      const t = await window.ABD.findTargetAsync(q);
+      if (!t || !t.email) return window.ABD.toast("Игрок не найден в базе. Проверь почту или ID");
       window.ABD.giveItemToEmail(t.email, itemId, "Админ-выдача");
+      window.ABD.notify(t.email, "Предмет", "Админ выдал предмет");
       this.render();
-      window.ABD.toast("Предмет выдан #" + t.publicId);
+      window.ABD.toast("Предмет выдан " + (t.nick || t.email));
     },
 
     toggleDelList() {

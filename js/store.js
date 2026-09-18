@@ -116,8 +116,77 @@
         return this.usersIndex.find((x) => Number(x.publicId) === id) ||
           (this.user && Number(this.user.publicId) === id ? this.user : null);
       }
-      return this.usersIndex.find((x) => (x.email || "").toLowerCase() === q) ||
-        (this.user && this.user.email === q ? this.user : null);
+      return this.usersIndex.find((x) => (x.email || "").toLowerCase() === q || (x.nick || "").toLowerCase() === q) ||
+        (this.user && ((this.user.email || "").toLowerCase() === q || (this.user.nick || "").toLowerCase() === q) ? this.user : null);
+    },
+
+    async findTargetAsync(q) {
+      const local = this.findTarget(q);
+      if (local && local.email) return local;
+      const fb = window.ABD_FB;
+      if (!fb || !fb.db) return local;
+      q = String(q || "").trim().toLowerCase().replace(/^#/, "");
+      if (!q) return null;
+      try {
+        if (q.indexOf("@") >= 0) {
+          const p = await fb.db.collection("profiles").doc(q).get();
+          if (p.exists) {
+            const d = p.data();
+            this.upsertIndex(d);
+            return d;
+          }
+          const us = await fb.db.collection("users").where("email", "==", q).limit(1).get();
+          if (!us.empty) {
+            const d = us.docs[0].data();
+            this.upsertIndex(d);
+            return d;
+          }
+        } else if (/^\d+$/.test(q)) {
+          const id = Number(q);
+          const us = await fb.db.collection("users").where("publicId", "==", id).limit(1).get();
+          if (!us.empty) {
+            const d = us.docs[0].data();
+            this.upsertIndex(d);
+            return d;
+          }
+          const ps = await fb.db.collection("profiles").where("publicId", "==", id).limit(1).get();
+          if (!ps.empty) {
+            const d = ps.docs[0].data();
+            this.upsertIndex(d);
+            return d;
+          }
+        } else {
+          const us = await fb.db.collection("users").where("nick", "==", q).limit(1).get();
+          if (!us.empty) {
+            const d = us.docs[0].data();
+            this.upsertIndex(d);
+            return d;
+          }
+        }
+      } catch (e) {
+        console.warn("findTargetAsync", e && e.message);
+      }
+      return local;
+    },
+
+    async pullPlayers() {
+      const fb = window.ABD_FB;
+      if (!fb || !fb.db) return;
+      try {
+        const snap = await fb.db.collection("profiles").limit(200).get();
+        snap.forEach((doc) => {
+          const d = doc.data() || {};
+          if (d.email) this.upsertIndex(d);
+        });
+      } catch (e) {}
+      try {
+        const snap = await fb.db.collection("users").limit(200).get();
+        snap.forEach((doc) => {
+          const d = doc.data() || {};
+          if (d.email || d.uid) this.upsertIndex(Object.assign({ email: d.email || doc.id }, d));
+        });
+      } catch (e) {}
+      this.saveLocal();
     },
 
     loadPack(email) {
@@ -294,21 +363,38 @@
 
     creditAz(email, amount) {
       amount = Math.floor(Number(amount) || 0);
-      if (!email || amount <= 0) return 0;
+      if (!email || !amount) return 0;
       email = String(email).toLowerCase();
       if (this.user && String(this.user.email || "").toLowerCase() === email) {
-        this.user.balance = (Number(this.user.balance) || 0) + amount;
+        this.user.balance = Math.max(0, (Number(this.user.balance) || 0) + amount);
         this.saveLocal();
         this.upsertIndex(this.user);
         this.persistUser();
-        return amount;
+      } else {
+        const pack = this.loadPack(email) || emptyUser({ email: email });
+        pack.balance = Math.max(0, (Number(pack.balance) || 0) + amount);
+        this.savePack(email, pack);
+        const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email);
+        if (row) row.balance = pack.balance;
+        this.saveLocal();
       }
-      const pack = this.loadPack(email) || emptyUser({ email: email });
-      pack.balance = (Number(pack.balance) || 0) + amount;
-      this.savePack(email, pack);
-      const row = this.usersIndex.find((x) => x.email === email);
-      if (row) row.balance = pack.balance;
-      this.saveLocal();
+      const fb = window.ABD_FB;
+      if (fb && fb.db) {
+        const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email);
+        const inc = fb.increment ? fb.increment(amount) : amount;
+        fb.db.collection("profiles").doc(email).set({
+          email: email,
+          balance: inc,
+          updatedAt: Date.now()
+        }, { merge: true }).catch(function () {});
+        if (row && row.uid && String(row.uid).indexOf("demo-") !== 0) {
+          fb.db.collection("users").doc(row.uid).set({
+            email: email,
+            balance: inc,
+            updatedAt: Date.now()
+          }, { merge: true }).catch(function () {});
+        }
+      }
       return amount;
     },
 
@@ -342,6 +428,23 @@
       pack.inventory = pack.inventory || [];
       pack.inventory.unshift(drop);
       this.savePack(email, pack);
+      const fb = window.ABD_FB;
+      if (fb && fb.db) {
+        fb.db.collection("gifts").add({
+          email: String(email).toLowerCase(),
+          itemId: item.id,
+          drop: drop,
+          at: Date.now()
+        }).catch(function () {});
+        const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === String(email).toLowerCase());
+        if (row && row.uid && String(row.uid).indexOf("demo-") !== 0) {
+          fb.db.collection("users").doc(row.uid).get().then(function (s) {
+            const inv = ((s.exists && s.data().inventory) || []).slice();
+            inv.unshift(drop);
+            return fb.db.collection("users").doc(row.uid).set({ inventory: inv, updatedAt: Date.now() }, { merge: true });
+          }).catch(function () {});
+        }
+      }
       return drop;
     },
 

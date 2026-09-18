@@ -500,6 +500,34 @@
       refreshHeader();
       closeAuth();
       if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
+      try {
+        fb.db.collection("users").doc(user.uid).onSnapshot((s) => {
+          if (!s.exists || !window.ABD.user) return;
+          const d = s.data() || {};
+          if (d.balance != null) window.ABD.user.balance = d.balance;
+          if (d.inventory) window.ABD.user.inventory = d.inventory;
+          if (d.nick) window.ABD.user.nick = d.nick;
+          window.ABD.saveLocal();
+          refreshHeader();
+          if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
+        });
+      } catch (e) {}
+      try {
+        fb.db.collection("gifts").where("email", "==", email).onSnapshot((snap) => {
+          if (!window.ABD.user) return;
+          snap.forEach((doc) => {
+            const g = doc.data() || {};
+            if (!g.itemId && !g.drop) return;
+            const exists = (window.ABD.user.inventory || []).some((x) => x.uid === (g.drop && g.drop.uid));
+            if (!exists && g.drop) {
+              window.ABD.user.inventory = window.ABD.user.inventory || [];
+              window.ABD.user.inventory.unshift(g.drop);
+            }
+          });
+          window.ABD.saveLocal();
+          if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
+        });
+      } catch (e) {}
     });
   }
 

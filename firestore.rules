@@ -46,5 +46,9 @@ service cloud.firestore {
     match /inbox/{id} {
       allow read, write: if signedIn();
     }
+
+    match /gifts/{id} {
+      allow read, write: if signedIn();
+    }
   }
 }
