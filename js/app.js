@@ -381,6 +381,12 @@
   }
 
   function bind() {
+    document.body.addEventListener("submit", (e) => {
+      if (e.target && (e.target.id === "loginForm" || e.target.id === "regForm")) {
+        e.preventDefault();
+        tryFirebaseAuth(e.target.id === "regForm" ? "reg" : "login");
+      }
+    });
     document.body.addEventListener("click", (e) => {
       const goEl = e.target.closest("[data-go]");
       if (goEl) { e.preventDefault(); go(goEl.getAttribute("data-go")); }
@@ -471,20 +477,28 @@
     } catch (e) {}
     fb.onAuthStateChanged(fb.auth, async (user) => {
       if (!user) return;
+      const email = (user.email || "").toLowerCase();
+      let profile = {
+        uid: user.uid,
+        email: email,
+        nick: user.displayName || email.split("@")[0],
+        balance: 0,
+        role: window.ABD.roleOf(email, "user"),
+        inventory: [],
+        bestDrop: null
+      };
       try {
-        const profile = await fb.upsertUserDoc(user, {
-          nick: user.displayName || (user.email || "").split("@")[0],
-          role: window.ABD.roleOf(user.email, "user")
-        });
-        profile.role = window.ABD.roleOf(profile.email, profile.role);
-        window.ABD.user = Object.assign({}, profile, { uid: user.uid, email: (user.email || "").toLowerCase() });
-        window.ABD.ensurePublicId(window.ABD.user);
-        window.ABD.saveLocal();
+        const saved = await fb.upsertUserDoc(user, profile);
+        if (saved) profile = Object.assign(profile, saved);
       } catch (e) {
-        console.warn("firestore user", e.message);
-        window.ABD.toast("База не записала профиль: открой Firestore и поставь правила из firestore.rules");
+        console.warn("firestore user", e && e.message);
       }
+      profile.role = window.ABD.roleOf(profile.email, profile.role);
+      window.ABD.user = Object.assign({}, profile, { uid: user.uid, email: email });
+      window.ABD.ensurePublicId(window.ABD.user);
+      window.ABD.saveLocal();
       refreshHeader();
+      closeAuth();
       if ($("profilePage") && $("profilePage").classList.contains("active")) renderProfile();
     });
   }

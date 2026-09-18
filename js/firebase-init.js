@@ -18,6 +18,7 @@
 
   const auth = firebase.auth();
   const db = firebase.firestore();
+  try { db.settings({ ignoreUndefinedProperties: true }); } catch (e) {}
 
   function doc(database, col, id) {
     return database.collection(col).doc(id);
@@ -89,8 +90,21 @@
 
   async function upsertUserDoc(user, extra) {
     extra = extra || {};
+    const fallback = {
+      uid: user.uid,
+      email: String(user.email || extra.email || "").toLowerCase(),
+      nick: extra.nick || user.displayName || String(user.email || "player").split("@")[0],
+      publicId: extra.publicId || null,
+      balance: extra.balance != null ? extra.balance : 0,
+      luckMul: extra.luckMul || 1,
+      role: extra.role || "user",
+      inventory: extra.inventory || [],
+      bestDrop: extra.bestDrop || null,
+      refNick: extra.refNick || null
+    };
+    try {
     const ref = db.collection("users").doc(user.uid);
-    const snap = await ref.get();
+    const snap = await ref.get({ source: "server" }).catch(function () { return ref.get(); });
     let data;
     if (snap.exists) {
       data = Object.assign({}, snap.data(), extra, {
@@ -125,6 +139,10 @@
       }, { merge: true });
     } catch (e) {}
     return data;
+    } catch (e) {
+      console.warn("upsert offline", e && e.message);
+      return fallback;
+    }
   }
 
   window.ABD_FB = {

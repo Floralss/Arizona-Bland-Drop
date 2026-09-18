@@ -120,26 +120,30 @@
     <div class="modal auth-modal">
       <div class="modal-head"><h3 id="authTitle">Вход</h3><button class="close" data-close-auth>×</button></div>
       <div id="authLogin">
-        <div class="field"><label>Почта или ник в игре</label><input id="loginEmail" placeholder="mail@gmail.com или Name_Surname"></div>
+        <form id="loginForm">
+        <div class="field"><label>Почта</label><input id="loginEmail" type="email" placeholder="mail@gmail.com"></div>
         <div class="field"><label>Пароль</label><input id="loginPass" type="password" placeholder="пароль"></div>
         <div class="auth-row">
-          <button class="btn purple" id="btnLogin" type="button">Войти</button>
+          <button class="btn purple" id="btnLogin" type="submit">Войти</button>
           <div class="auth-side">
             <span>Если нет аккаунта — создайте</span>
             <button class="btn ghost" id="toReg" type="button">Регистрация</button>
           </div>
         </div>
+        </form>
       </div>
       <div id="authReg" class="hidden">
+        <form id="regForm">
         <div class="field"><label>Почта</label><input id="regEmail" placeholder="you@mail.com"></div>
         <div class="field"><label>Ник в игре</label><input id="regNick" placeholder="Name_Surname"></div>
         <div class="field"><label>Пароль</label><input id="regPass" type="password" placeholder="минимум 6 символов"></div>
         <div class="field"><label>Повтори пароль</label><input id="regPass2" type="password" placeholder="ещё раз"></div>
         <div class="field"><label>Рефка — ник того, кто пригласил (необязательно)</label><input id="regRef" placeholder="можно пусто"></div>
         <div class="auth-row">
-          <button class="btn purple" id="btnReg" type="button">Создать аккаунт</button>
+          <button class="btn purple" id="btnReg" type="submit">Создать аккаунт</button>
           <button class="btn ghost" id="toLogin" type="button">Уже есть аккаунт</button>
         </div>
+        </form>
       </div>
     </div>
   </div>
