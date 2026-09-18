@@ -37,6 +37,36 @@
       </div>`).join("")}</div>`;
   }
 
+
+  function refreshBell() {
+    const dot = $("bellDot");
+    if (!dot) return;
+    const n = window.ABD.unreadCount ? window.ABD.unreadCount() : 0;
+    if (n > 0) {
+      dot.classList.remove("hidden");
+      dot.textContent = n > 9 ? "9+" : String(n);
+    } else {
+      dot.classList.add("hidden");
+    }
+  }
+
+  function toggleBell() {
+    const panel = $("bellPanel");
+    if (!panel) return;
+    const open = panel.classList.contains("hidden");
+    if (!open) {
+      panel.classList.add("hidden");
+      return;
+    }
+    const list = window.ABD.myInbox ? window.ABD.myInbox() : [];
+    panel.classList.remove("hidden");
+    panel.innerHTML = "<div class='bell-head'>Уведомления</div>" + (list.length ? list.map((n) => (
+      "<div class='bell-item " + (n.read ? "" : "unread") + "'><b>" + n.title + "</b><p>" + n.text + "</p><small>" + new Date(n.at).toLocaleString("ru-RU") + "</small></div>"
+    )).join("") : "<div class='bell-item'><p>Пока пусто</p></div>");
+    window.ABD.markRead();
+    refreshBell();
+  }
+
   function refreshHeader() {
     const u = window.ABD.user;
     $("authButtons").classList.toggle("hidden", !!u);
@@ -48,6 +78,7 @@
     } else {
       $("navAdmin").classList.add("hidden");
     }
+    refreshBell();
   }
 
   function renderProfile() {
@@ -135,7 +166,7 @@
     if (type === "game") {
       const n = Number(String(amount).replace(/\s/g, "").replace(/,/g, ""));
       if (!n || n < 1e9) {
-        window.ABD.toast("Минимум игровой валюты — 1 млрд = 10 000 AZ");
+        window.ABD.toast("Минимум игровой валюты — 1 млрд = 10 000 BC");
         return;
       }
       detail = "Игровая валюта " + n.toLocaleString("ru-RU") + " → " + formatAZ(Math.floor(n / 1e9) * 10000);
@@ -143,10 +174,10 @@
     if (type === "az" || type === "game") {
       const az = window.ABD.parseDeposit({ rawType: type, amount: amount });
       if (!az) {
-        window.ABD.toast(type === "game" ? "Минимум 1 млрд игровой валюты" : "Укажи сумму AZ числом");
+        window.ABD.toast(type === "game" ? "Минимум 1 млрд игровой валюты" : "Укажи сумму BC числом");
         return;
       }
-      detail = type === "game" ? detail : ("AZ " + formatAZ(az));
+      detail = type === "game" ? detail : ("BC " + formatAZ(az));
     }
     const order = {
       kind: "deposit",
@@ -303,6 +334,9 @@
       if (multi) window.ABD_UP.setMulti(multi.getAttribute("data-multi"));
       if (e.target.id === "admLuckOn") window.ABD_ADMIN.luck($("admEmail").value, $("admLuck").value);
       if (e.target.id === "admLuckOff") window.ABD_ADMIN.luck($("admEmail").value, 1);
+      if (e.target.id === "admCastBtn") window.ABD_ADMIN.broadcast();
+      if (e.target.id === "admResetBal") window.ABD_ADMIN.resetBalances();
+      if (e.target.id === "bellBtn" || e.target.closest("#bellBtn")) toggleBell();
       if (e.target.id === "btnLogin") tryFirebaseAuth("login");
       if (e.target.id === "btnReg") tryFirebaseAuth("reg");
       if (e.target.id === "bindFb") bindLocalToFirebase();
@@ -337,9 +371,9 @@
     $("depType").addEventListener("change", () => {
       const t = $("depType").value;
       $("depHint").textContent = t === "game"
-        ? "Минимум 1 000 000 000 игровой валюты = 10 000 AZ на сайте."
+        ? "Минимум 1 000 000 000 игровой валюты = 10 000 BC на сайте."
         : t === "az"
-          ? "AZ коины начислят после подтверждения в игре."
+          ? "BC коины начислят после подтверждения в игре."
           : "Укажи название предмета. Работник выдаст / снимет его в игре.";
     });
   }
@@ -434,7 +468,7 @@
     } catch (e) {}
   }
 
-  window.ABD_APP = { go, renderLive, refreshHeader, renderProfile };
+  window.ABD_APP = { go, renderLive, refreshHeader, renderProfile, refreshBell };
 
   document.addEventListener("DOMContentLoaded", () => {
     window.ABD_CASES_UI.renderGrid();

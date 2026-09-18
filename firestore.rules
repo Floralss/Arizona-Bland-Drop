@@ -42,5 +42,9 @@ service cloud.firestore {
     match /presence/{id} {
       allow read, write: if true;
     }
+
+    match /inbox/{id} {
+      allow read, write: if signedIn();
+    }
   }
 }

@@ -5,6 +5,7 @@
   const LS_LIVE = "abd_live_real";
   const LS_USERS = "abd_users_index";
   const LS_NEXT = "abd_next_public_id";
+  const LS_INBOX = "abd_inbox";
 
   function emptyUser(extra) {
     return Object.assign({
@@ -37,6 +38,7 @@
     live: [],
     orders: [],
     usersIndex: [],
+    inbox: {},
     online: false,
 
     toast(msg) {
@@ -61,6 +63,7 @@
       localStorage.setItem(LS_ORDERS, JSON.stringify(this.orders || []));
       localStorage.setItem(LS_LIVE, JSON.stringify((this.live || []).slice(0, 40)));
       localStorage.setItem(LS_USERS, JSON.stringify(this.usersIndex || []));
+      localStorage.setItem(LS_INBOX, JSON.stringify(this.inbox || {}));
     },
 
     loadLocal() {
@@ -68,6 +71,7 @@
       try { this.orders = JSON.parse(localStorage.getItem(LS_ORDERS) || "[]"); } catch (e) { this.orders = []; }
       try { this.live = JSON.parse(localStorage.getItem(LS_LIVE) || "[]"); } catch (e) { this.live = []; }
       try { this.usersIndex = JSON.parse(localStorage.getItem(LS_USERS) || "[]"); } catch (e) { this.usersIndex = []; }
+      try { this.inbox = JSON.parse(localStorage.getItem(LS_INBOX) || "{}"); } catch (e) { this.inbox = {}; }
       if (this.user) {
         this.user.role = this.roleOf(this.user.email, this.user.role);
         this.ensurePublicId(this.user);
@@ -284,6 +288,83 @@
       pack.inventory.unshift(drop);
       this.savePack(email, pack);
       return drop;
+    },
+
+    notify(email, title, text) {
+      email = String(email || "").toLowerCase();
+      if (!email) return;
+      if (!this.inbox[email]) this.inbox[email] = [];
+      this.inbox[email].unshift({
+        id: "n-" + Date.now() + "-" + Math.floor(Math.random() * 999),
+        title: title || "Сообщение",
+        text: text || "",
+        at: Date.now(),
+        read: false
+      });
+      this.inbox[email] = this.inbox[email].slice(0, 40);
+      this.saveLocal();
+      const fb = window.ABD_FB;
+      if (fb) {
+        try {
+          fb.addDoc(fb.collection(fb.db, "inbox"), {
+            email: email, title: title, text: text, at: Date.now(), read: false
+          });
+        } catch (e) {}
+      }
+    },
+
+    notifyAll(title, text) {
+      const seen = {};
+      (this.usersIndex || []).forEach((u) => {
+        if (u && u.email && !seen[u.email]) {
+          seen[u.email] = 1;
+          this.notify(u.email, title, text);
+        }
+      });
+      if (this.user && this.user.email && !seen[this.user.email]) {
+        this.notify(this.user.email, title, text);
+      }
+    },
+
+    myInbox() {
+      const email = this.user && this.user.email;
+      if (!email) return [];
+      return this.inbox[String(email).toLowerCase()] || [];
+    },
+
+    unreadCount() {
+      return this.myInbox().filter((n) => !n.read).length;
+    },
+
+    markRead() {
+      const email = this.user && this.user.email;
+      if (!email) return;
+      const list = this.inbox[String(email).toLowerCase()] || [];
+      list.forEach((n) => { n.read = true; });
+      this.saveLocal();
+    },
+
+    removeOrder(id) {
+      this.orders = (this.orders || []).filter((o) => o.id !== id);
+      this.saveLocal();
+    },
+
+    resetAllBalances() {
+      (this.usersIndex || []).forEach((u) => {
+        if (!u || !u.email) return;
+        u.balance = 0;
+        const pack = this.loadPack(u.email);
+        if (pack) {
+          pack.balance = 0;
+          this.savePack(u.email, pack);
+        }
+      });
+      if (this.user) {
+        this.user.balance = 0;
+        this.persistUser();
+      }
+      this.saveLocal();
+      this.notifyAll("Баланс обнулён", "Админ сбросил баланс всем игрокам.");
     }
   };
 

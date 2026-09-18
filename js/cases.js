@@ -11,9 +11,9 @@
       if (!root) return;
       root.innerHTML = window.ABD_CASES.map((c) => `
         <article class="case-card" data-open-case="${c.id}">
-          <h4>${c.name}</h4>
           <div class="thumb"><img src="${c.image}" alt="${c.name}"></div>
-          <span class="price-btn">${c.price.toLocaleString("ru-RU")} AZ</span>
+          <h4>${c.name}</h4>
+          <span class="price-btn">${c.price.toLocaleString("ru-RU")} BC</span>
         </article>
       `).join("");
     },
@@ -69,9 +69,9 @@
         <div class="case-center case-under">
           <div class="art pulse-art"><img src="${c.image}" alt="${c.name}"></div>
           <div id="caseResult" class="hidden"></div>
-          ${user && miss > 0 ? `<div class="warn-bal"><b>${need.toLocaleString("ru-RU")} AZ — не хватает ${miss.toLocaleString("ru-RU")} AZ</b></div>` : ""}
+          ${user && miss > 0 ? `<div class="warn-bal"><b>${need.toLocaleString("ru-RU")} BC — не хватает ${miss.toLocaleString("ru-RU")} BC</b></div>` : ""}
           ${canOpen
-            ? `<button class="btn green btn-lg" id="spinCase">Открыть за ${need.toLocaleString("ru-RU")} AZ</button>`
+            ? `<button class="btn green btn-lg" id="spinCase">Открыть за ${need.toLocaleString("ru-RU")} BC</button>`
             : user
               ? `<button class="btn green btn-lg" data-open-dep>Пополнить баланс</button>`
               : `<button class="btn green btn-lg" data-go="profile">Войти, чтобы открыть</button>`}
@@ -99,7 +99,7 @@
       const roul = document.getElementById("roulette");
       if (!c || !user || this.spinning || !roul) return;
       if (user.balance < c.price) {
-        window.ABD.toast("Недостаточно AZ");
+        window.ABD.toast("Недостаточно BC");
         return;
       }
 

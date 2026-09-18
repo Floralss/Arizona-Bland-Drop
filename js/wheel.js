@@ -1,13 +1,13 @@
 (function () {
   const REWARDS = [
-    { id: "az-300", label: "300 AZ", type: "az", amount: 300 },
-    { id: "az-800", label: "800 AZ", type: "az", amount: 800 },
-    { id: "az-1500", label: "1 500 AZ", type: "az", amount: 1500 },
+    { id: "az-300", label: "300 BC", type: "az", amount: 300 },
+    { id: "az-800", label: "800 BC", type: "az", amount: 800 },
+    { id: "az-1500", label: "1 500 BC", type: "az", amount: 1500 },
     { id: "case-acc", label: "Кейс аксы", type: "case", caseId: "acc" },
     { id: "acc-cap", label: "Bland Cap", type: "item", itemId: "acc-cap" },
-    { id: "az-2500", label: "2 500 AZ", type: "az", amount: 2500 },
+    { id: "az-2500", label: "2 500 BC", type: "az", amount: 2500 },
     { id: "skin-hoodie", label: "Street Hoodie", type: "item", itemId: "skin-hoodie" },
-    { id: "az-500", label: "500 AZ", type: "az", amount: 500 }
+    { id: "az-500", label: "500 BC", type: "az", amount: 500 }
   ];
 
   function todayKey(email) {
@@ -111,7 +111,7 @@
       } else if (reward.type === "case") {
         u.balance += window.ABD_CASES.find((c) => c.id === reward.caseId).price;
         await window.ABD.persistUser();
-        window.ABD.toast("Колесо: AZ на кейс «Аксессуары»");
+        window.ABD.toast("Колесо: BC на кейс «Аксессуары»");
       }
       window.ABD_APP.refreshHeader();
       this.render();

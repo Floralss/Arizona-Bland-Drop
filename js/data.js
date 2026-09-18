@@ -436,7 +436,7 @@ window.itemImg = function (item) {
 
 window.formatAZ = function (n) {
   n = Math.round(Number(n) || 0);
-  return n.toLocaleString("ru-RU") + " AZ";
+  return n.toLocaleString("ru-RU") + " BC";
 };
 
 window.pickWeighted = function (entries) {

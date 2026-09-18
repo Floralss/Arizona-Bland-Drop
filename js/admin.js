@@ -52,7 +52,7 @@
                 <select id="admRole"><option value="user">Игрок</option><option value="worker">Работник</option><option value="owner">Владелец</option></select>
               </div>
               <button class="btn" id="admSetRole">Назначить роль</button>
-              <div class="field" style="margin-top:12px"><label>Начислить AZ</label><input id="admMoney" type="number" value="10000"></div>
+              <div class="field" style="margin-top:12px"><label>Начислить BC</label><input id="admMoney" type="number" value="10000"></div>
               <button class="btn" id="admGiveMoney">Выдать коины</button>
               <div class="field" style="margin-top:12px"><label>Предмет</label>
                 <select id="admItem">${Object.values(window.ABD_ITEMS).map((it) => `<option value="${it.id}">${it.name}</option>`).join("")}</select>
@@ -71,12 +71,21 @@
               </div>
               <button class="btn" id="admLuckOn">Включить подкрутку</button>
               <button class="btn ghost" id="admLuckOff">Убрать подкрутку</button>
+              <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+              <h3>Рассылка</h3>
+              <div class="field"><label>Сообщение всем в колокольчик</label>
+                <textarea id="admCast" rows="3" placeholder="Текст новости"></textarea>
+              </div>
+              <button class="btn" id="admCastBtn">Отправить рассылку</button>
+              <div class="field" style="margin-top:14px">
+                <button class="btn ghost" id="admResetBal">Обнулить всем баланс</button>
+              </div>
               <h4 style="margin:18px 0 8px">Игроки</h4>
               <table class="table">
                 <tr><th>ID</th><th>Ник</th><th>Роль</th><th>Удача</th><th>Баланс</th></tr>
                 ${users.map((x) => `<tr><td>#${x.publicId || "—"}</td><td>${x.nick || x.email}</td><td>${x.role}</td><td>x${x.luckMul || 1}</td><td>${formatAZ(x.balance || 0)}</td></tr>`).join("")}
               </table>
-            ` : `<h3>Работник</h3><p class="muted">Подтверждай заявки кнопкой «Зачислить» — AZ упадут игроку.</p>`}
+            ` : `<h3>Работник</h3><p class="muted">Подтверждай заявки кнопкой «Зачислить» — BC упадут игроку.</p>`}
           </div>
         </div>`;
     },
@@ -84,6 +93,14 @@
     setStatus(id, status) {
       const o = window.ABD.orders.find((x) => x.id === id);
       if (!o) return;
+      if (status === "reject") {
+        window.ABD.notify(o.email, "Заявка отклонена", "Ваша заявка была отклонена");
+        window.ABD.removeOrder(id);
+        window.ABD.toast("Заявка удалена, игроку ушло сообщение");
+        this.render();
+        if (window.ABD_APP.refreshBell) window.ABD_APP.refreshBell();
+        return;
+      }
       if (status === "done" && o.kind === "deposit" && !o.credited) {
         const az = window.ABD.parseDeposit(o);
         if (o.rawType === "az" || o.rawType === "game") {
@@ -95,7 +112,7 @@
           o.credited = true;
           window.ABD.toast("Зачислено " + formatAZ(az) + " на #" + ((window.ABD.findTarget(o.email) || {}).publicId || "?"));
         } else {
-          window.ABD.toast("Предмет принят. AZ не начисляются — это депозит вещи.");
+          window.ABD.toast("Предмет принят. BC не начисляются — это депозит вещи.");
         }
       }
       o.status = status;
@@ -134,6 +151,25 @@
       window.ABD.giveItemToEmail(t.email, itemId, "Админ-выдача");
       this.render();
       window.ABD.toast("Предмет выдан #" + t.publicId);
+    },
+
+    broadcast() {
+      if (!can("owner")) return window.ABD.toast("Только владелец");
+      const text = (document.getElementById("admCast").value || "").trim();
+      if (!text) return window.ABD.toast("Напиши текст");
+      window.ABD.notifyAll("Новость", text);
+      document.getElementById("admCast").value = "";
+      window.ABD.toast("Рассылка ушла всем");
+      if (window.ABD_APP.refreshBell) window.ABD_APP.refreshBell();
+    },
+
+    resetBalances() {
+      if (!can("owner")) return window.ABD.toast("Только владелец");
+      if (!confirm("Обнулить баланс всем игрокам?")) return;
+      window.ABD.resetAllBalances();
+      this.render();
+      window.ABD_APP.refreshHeader();
+      window.ABD.toast("Балансы обнулены");
     },
 
     luck(q, mul) {

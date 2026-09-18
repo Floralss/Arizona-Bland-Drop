@@ -102,7 +102,7 @@ img { max-width: 100%; display: block; }
   min-height: 320px; margin: 10px 18px 18px;
   background:
     linear-gradient(90deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.25) 55%, rgba(0,0,0,.15) 100%),
-    url("../assets/hero-cars.png") center / cover no-repeat,
+    url("../assets/bg.png") right center / cover no-repeat,
     #120000;
 }
 .hero:after { display: none; }
@@ -127,13 +127,14 @@ img { max-width: 100%; display: block; }
 .col-title { text-align: center; letter-spacing: 2px; font-weight: 800; margin: 10px 0 18px; color: #ece8ff; }
 .cases {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 28px 16px;
-  padding: 0 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 36px 18px;
+  padding: 0 18px 20px;
 }
 .case-card { cursor: pointer; text-align: center; background: transparent; border: 0; }
 .case-card .thumb {
-  height: 210px; display: grid; place-items: center;
+  height: 250px; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 40%, rgba(255,40,40,.16), transparent 62%);
   transition: transform .2s ease;
 }
 .case-card .thumb img { animation: floaty 3.4s ease-in-out infinite; }
@@ -146,11 +147,11 @@ img { max-width: 100%; display: block; }
   0%,100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
-.case-card .thumb img { width: 100%; height: 210px; object-fit: contain; filter: drop-shadow(0 16px 20px rgba(0,0,0,.45)); }
-.case-card h4 { margin: 6px 0 8px; font-size: 15px; font-weight: 700; color: #d6d8e2; }
+.case-card .thumb img { width: 100%; height: 240px; object-fit: contain; filter: drop-shadow(0 18px 18px rgba(0,0,0,.55)); }
+.case-card h4 { margin: 10px 0 8px; font-size: 16px; font-weight: 700; color: #ece6e6; }
 .price-btn {
   display: inline-block; min-width: 86px;
-  background: #2a2150; color: #e9d5ff; font-weight: 800; border-radius: 999px; padding: 7px 14px; font-size: 13px;
+  background: #f08a1a; color: #1a0e04; font-weight: 800; border-radius: 12px; padding: 8px 16px; font-size: 14px;
 }
 
 .panel {
@@ -312,6 +313,28 @@ img { max-width: 100%; display: block; }
 }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .close { background: transparent; border: 0; color: var(--mute); font-size: 22px; cursor: pointer; }
+.bell-btn {
+  position: relative; width: 40px; height: 40px; border: 0; border-radius: 12px;
+  background: #1a1214; color: #fff; cursor: pointer; display: grid; place-items: center;
+}
+.bell-dot {
+  position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px;
+  background: #e10600; color: #fff; border-radius: 99px; font-size: 10px; font-weight: 800;
+  display: grid; place-items: center;
+}
+.bell-panel {
+  position: fixed; right: 18px; top: 74px; width: min(360px, calc(100vw - 24px));
+  max-height: 420px; overflow: auto; z-index: 80;
+  background: #141014; border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: var(--shadow); padding: 8px;
+}
+.bell-head { font-weight: 800; padding: 8px 10px; }
+.bell-item { padding: 10px; border-top: 1px solid var(--line); }
+.bell-item b { display: block; margin-bottom: 4px; }
+.bell-item p { color: var(--sand); font-size: 13px; }
+.bell-item small { color: var(--mute); font-size: 11px; }
+.bell-item.unread { background: rgba(225,6,0,.14); border-radius: 10px; }
+textarea { width: 100%; background: #101018; color: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
   z-index: 200; min-width: 260px; text-align: center;

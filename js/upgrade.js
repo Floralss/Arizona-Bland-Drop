@@ -59,7 +59,7 @@
           </div>
           <div class="up-controls">
             <div class="stepper">
-              <span>${from ? formatAZ(from.price) : "0 AZ"}</span>
+              <span>${from ? formatAZ(from.price) : "0 BC"}</span>
             </div>
             <button class="btn gold-wide" id="doUpgrade">АПГРЕЙД</button>
             <div class="multis">
