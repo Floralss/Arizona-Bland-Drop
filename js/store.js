@@ -273,14 +273,14 @@
         const snap = await fb.db.collection("directory").limit(400).get();
         snap.forEach((doc) => {
           const d = doc.data() || {};
-          if (d.email) this.upsertIndex(d);
+          if (d.email && !d.deleted) this.upsertIndex(d);
         });
       } catch (e) {}
       try {
         const snap = await fb.db.collection("profiles").limit(200).get();
         snap.forEach((doc) => {
           const d = doc.data() || {};
-          if (d.email) this.upsertIndex(d);
+          if (d.email && !d.deleted) this.upsertIndex(d);
         });
       } catch (e) {}
       try {
@@ -650,32 +650,59 @@
       if (this.user && this.user.email) {
         map[this.user.email] = Object.assign({}, map[this.user.email] || {}, this.user);
       }
-      return Object.keys(map).map((email) => map[email]).sort((a, b) => Number(a.publicId || 0) - Number(b.publicId || 0));
+      return Object.keys(map).map((email) => map[email]).filter((x) => !x.deleted).sort((a, b) => Number(a.publicId || 0) - Number(b.publicId || 0));
     },
 
     async deleteAccount(email) {
       email = String(email || "").toLowerCase();
       if (!email) return false;
-      const row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email) || this.loadPack(email) || {};
+      await this.pullPlayers();
+      let row = this.usersIndex.find((x) => (x.email || "").toLowerCase() === email) || this.loadPack(email) || {};
+      const fb = window.ABD_FB;
+      if (fb && fb.db && !row.uid) {
+        try {
+          const p = await fb.db.collection("profiles").doc(email).get();
+          if (p.exists) row = Object.assign({}, row, p.data());
+        } catch (e) {}
+        try {
+          const d = await fb.db.collection("directory").doc(email).get();
+          if (d.exists) row = Object.assign({}, row, d.data());
+        } catch (e) {}
+      }
       localStorage.removeItem("abd_inv_" + email);
+      const map = this.idMap();
+      delete map[email];
+      this.saveIdMap(map);
       this.usersIndex = (this.usersIndex || []).filter((x) => (x.email || "").toLowerCase() !== email);
       if (this.inbox) delete this.inbox[email];
       this.orders = (this.orders || []).filter((o) => (o.email || "").toLowerCase() !== email);
-      if (this.user && (this.user.email || "").toLowerCase() === email) {
+      const self = this.user && (this.user.email || "").toLowerCase() === email;
+      if (self) {
         this.user = null;
         localStorage.removeItem("abd_local_user");
       }
       this.saveLocal();
-      const fb = window.ABD_FB;
-      if (fb) {
+      if (fb && fb.db) {
+        const uid = row.uid;
+        const del = function (col, id) {
+          return fb.db.collection(col).doc(id).delete().catch(function () {
+            return fb.db.collection(col).doc(id).set({ deleted: true, email: email, at: Date.now() });
+          });
+        };
+        await del("profiles", email);
+        await del("directory", email);
+        if (uid && String(uid).indexOf("demo-") !== 0 && uid !== "local") {
+          await del("users", uid);
+        }
         try {
-          await fb.setDoc(fb.doc(fb.db, "profiles", email), { deleted: true, email: email }, { merge: true });
+          const banned = { email: email, uid: uid || null, at: Date.now() };
+          await fb.db.collection("deletedUsers").doc(email).set(banned);
         } catch (e) {}
-        try {
-          if (row.uid && String(row.uid).indexOf("demo-") !== 0 && row.uid !== "local") {
-            await fb.setDoc(fb.doc(fb.db, "users", row.uid), { deleted: true, email: email }, { merge: true });
-          }
-        } catch (e) {}
+      }
+      if (self && fb && fb.auth && fb.auth.currentUser) {
+        try { await fb.auth.currentUser.delete(); } catch (e) {
+          try { await fb.signOut(); } catch (e2) {}
+        }
       }
       return true;
     },

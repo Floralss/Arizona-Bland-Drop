@@ -555,6 +555,17 @@
         return;
       }
       const email = (user.email || "").toLowerCase();
+      try {
+        const dead = await fb.db.collection("deletedUsers").doc(email).get();
+        if (dead.exists) {
+          try { await user.delete(); } catch (e) {}
+          try { await fb.signOut(); } catch (e) {}
+          window.ABD.logout();
+          window.ABD.toast("Этот аккаунт удалён админом");
+          refreshHeader();
+          return;
+        }
+      } catch (e) {}
       const local = window.ABD.mergeKeep(
         window.ABD.loadPack(email) || {},
         (window.ABD.user && window.ABD.user.email === email) ? window.ABD.user : {}
